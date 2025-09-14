@@ -87,3 +87,18 @@ class DefaultConfig:
     def CONTRACT_REGENERATION_PROMPT(self):
         """Load contract regeneration prompt from file."""
         return self.load_prompt('CONTRACT_REGENERATION_PROMPT.txt')
+    
+    @property
+    def CONTRACT_GENERATION_PROMPT(self):
+        """Load contract generation prompt from file."""
+        return self.load_prompt('CONTRACT_GENERATION_PROMPT.txt')
+    
+    @property
+    def INTERACTION_PROMPT_LEGAL(self):
+        """Load Legal interaction prompt from file."""
+        return self.load_prompt('INTERACTION_PROMPT_LEGAL.txt')
+    
+    @property
+    def REVIEW_MODIFICATION_PROMPT_LEGAL(self):
+        """Load Legal review modification prompt from file."""
+        return self.load_prompt('REVIEW_MODIFICATION_PROMPT_LEGAL.txt')
