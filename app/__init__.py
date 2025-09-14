@@ -39,8 +39,8 @@ def create_app(config_name='default'):
         else:
             logging.warning("Running with insecure default SECRET_KEY for development")
     
-    # Configure CORS - restrict origins for security
-    CORS(app, origins=["http://localhost:3000", "http://localhost:5000"], supports_credentials=False)
+    # Configure CORS for Replit environment - allow all origins for development
+    CORS(app, origins="*", supports_credentials=False)
     
     # Set maximum content length (16MB)
     app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024
