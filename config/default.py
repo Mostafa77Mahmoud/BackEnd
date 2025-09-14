@@ -69,6 +69,11 @@ class DefaultConfig:
         return self.load_prompt('SYS_PROMPT_SHARIA_ANALYSIS.txt')
     
     @property
+    def SYS_PROMPT_LEGAL(self):
+        """Load Legal analysis prompt from file."""
+        return self.load_prompt('SYS_PROMPT_LEGAL_ANALYSIS.txt')
+    
+    @property
     def INTERACTION_PROMPT_SHARIA(self):
         """Load Sharia interaction prompt from file."""
         return self.load_prompt('INTERACTION_PROMPT_SHARIA.txt')
