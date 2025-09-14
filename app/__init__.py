@@ -30,6 +30,15 @@ def create_app(config_name='default'):
     else:
         app.config.from_object('config.default.DefaultConfig')
     
+    # Validate critical configuration
+    if not app.config.get('SECRET_KEY'):
+        error_msg = "FLASK_SECRET_KEY environment variable is required"
+        logging.error(error_msg)
+        if config_name == 'production':
+            raise ValueError(error_msg)
+        else:
+            logging.warning("Running with insecure default SECRET_KEY for development")
+    
     # Configure CORS - restrict origins for security
     CORS(app, origins=["http://localhost:3000", "http://localhost:5000"], supports_credentials=False)
     

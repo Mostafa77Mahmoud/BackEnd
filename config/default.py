@@ -11,7 +11,7 @@ class DefaultConfig:
     
     # Flask Configuration
     SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
-    DEBUG = True
+    DEBUG = False  # Secure default
     
     @classmethod
     def validate_config(cls):

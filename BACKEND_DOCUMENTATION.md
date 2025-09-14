@@ -888,6 +888,148 @@ graph TD
     D --> D3[Storage Consumption]
 ```
 
+## Modern Flask Architecture (Updated 2024)
+
+### Application Factory Pattern
+
+The application has been restructured to use Flask's modern application factory pattern with organized blueprints:
+
+**Main Factory (`app/__init__.py`):**
+```python
+def create_app(config_name='default'):
+    """Creates and configures Flask application instance"""
+    app = Flask(__name__)
+    
+    # Load environment-based configuration
+    if config_name == 'production':
+        app.config.from_object('config.production.ProductionConfig')
+    else:
+        app.config.from_object('config.default.DefaultConfig')
+    
+    # Register blueprints for modular routing
+    from app.routes.analysis import analysis_bp
+    from app.routes.generation import generation_bp
+    from app.routes.interaction import interaction_bp
+    from app.routes.admin import admin_bp
+    
+    app.register_blueprint(analysis_bp, url_prefix='/api')
+    app.register_blueprint(generation_bp, url_prefix='/api')
+    app.register_blueprint(interaction_bp, url_prefix='/api')
+    app.register_blueprint(admin_bp, url_prefix='/api')
+    
+    return app
+```
+
+### Blueprint Organization
+
+**Analysis Blueprint (`app/routes/analysis.py`):**
+- `POST /api/analyze` - Main contract analysis endpoint
+- `GET /api/analysis/<session_id>` - Retrieve analysis results
+
+**Generation Blueprint (`app/routes/generation.py`):**
+- `POST /api/generate_from_brief` - Generate contract from brief
+- `POST /api/generate_modified_contract` - Create modified compliant versions
+
+**Interaction Blueprint (`app/routes/interaction.py`):**
+- `POST /api/interact` - Real-time Q&A consultation
+- `POST /api/review_modification` - Expert review system
+
+**Admin Blueprint (`app/routes/admin.py`):**
+- `GET /api/rules` - Sharia compliance rules endpoint
+- `GET /api/health` - Application health check
+
+### Enhanced Security Configuration
+
+**Environment-Based Configuration (`config/default.py`):**
+```python
+class DefaultConfig:
+    # Flask Configuration - REQUIRES environment variable
+    SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
+    
+    @classmethod
+    def validate_config(cls):
+        if not cls.SECRET_KEY:
+            raise ValueError("FLASK_SECRET_KEY environment variable is required")
+    
+    # External service configuration from environment
+    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+    MONGO_URI = os.environ.get("MONGO_URI")
+    CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME")
+    CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY")
+    CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET")
+```
+
+**CORS Security:**
+- Restricted origins for development security
+- Credentials support disabled to prevent leakage
+- Configurable for different environments
+
+### Robust Service Initialization
+
+**Database Service (`app/services/database.py`):**
+```python
+class DatabaseService:
+    def __init__(self, mongo_uri=None):
+        if not mongo_uri:
+            logging.warning("MongoDB URI not provided. Database operations will be limited.")
+            self.client = None
+            return
+        
+        try:
+            self.client = MongoClient(mongo_uri)
+            self.client.admin.command('ping')  # Test connection
+        except Exception as e:
+            logging.error(f"Failed to connect to MongoDB: {e}")
+            self.client = None
+```
+
+**Cloudinary Service (`app/services/cloudinary_service.py`):**
+```python
+class CloudinaryService:
+    def __init__(self, cloud_name=None, api_key=None, api_secret=None):
+        if not all([cloud_name, api_key, api_secret]):
+            logging.warning("Cloudinary credentials not fully provided.")
+            self.is_configured = False
+            return
+        
+        try:
+            cloudinary.config(cloud_name=cloud_name, api_key=api_key, api_secret=api_secret)
+            self.is_configured = True
+        except Exception as e:
+            logging.error(f"Failed to configure Cloudinary: {e}")
+            self.is_configured = False
+```
+
+### Prompt Template System
+
+Organized prompt templates in `prompts/` directory:
+- `sharia_analysis.txt` - AAOIFI compliance analysis
+- `legal_analysis.txt` - General legal review
+- `contract_generation.txt` - Contract creation prompts
+- `interaction_consultation.txt` - User Q&A prompts
+- `modification_review.txt` - Expert review prompts
+
+### Project Structure
+
+```
+├── app/
+│   ├── __init__.py          # Application factory
+│   ├── routes/              # Organized blueprints
+│   │   ├── analysis.py
+│   │   ├── generation.py
+│   │   ├── interaction.py
+│   │   └── admin.py
+│   └── services/            # External service integrations
+│       ├── database.py
+│       └── cloudinary_service.py
+├── config/
+│   ├── default.py          # Environment-based configuration
+│   └── production.py       # Production settings
+├── prompts/                # AI prompt templates
+├── run.py                  # Application entry point
+└── requirements.txt        # Dependencies
+```
+
 ## Conclusion
 
 This Shariaa Contract Analyzer backend represents a sophisticated integration of modern web technologies, AI capabilities, and document processing systems. The architecture prioritizes scalability, maintainability, and security while providing comprehensive functionality for Islamic law compliance analysis.

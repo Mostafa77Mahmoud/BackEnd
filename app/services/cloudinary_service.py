@@ -5,15 +5,26 @@ Cloud storage management for the Shariaa Contract Analyzer.
 """
 
 import logging
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
 
 logger = logging.getLogger(__name__)
+
+# Import cloudinary with graceful fallback
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+    CLOUDINARY_AVAILABLE = True
+except ImportError:
+    logger.warning("Cloudinary package not available. File upload features will be limited.")
+    CLOUDINARY_AVAILABLE = False
 
 
 def init_cloudinary(app):
     """Initialize Cloudinary configuration."""
+    if not CLOUDINARY_AVAILABLE:
+        logger.warning("Cloudinary package not installed - file storage services will be unavailable")
+        return
+    
     try:
         cloud_name = app.config.get('CLOUDINARY_CLOUD_NAME')
         api_key = app.config.get('CLOUDINARY_API_KEY')
