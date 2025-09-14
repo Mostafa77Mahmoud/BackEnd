@@ -55,6 +55,9 @@ def create_app(config_name='default'):
     from app.services.cloudinary_service import init_cloudinary
     init_cloudinary(app)
     
+    from app.services.ai_service import init_ai_service
+    init_ai_service(app)
+    
     # Register blueprints
     register_blueprints(app)
     

@@ -46,3 +46,39 @@ class DefaultConfig:
     
     # Default Jurisdiction
     DEFAULT_JURISDICTION = "Egypt"
+    
+    # AI Prompts (read from prompts/ directory)
+    @classmethod
+    def load_prompt(cls, filename):
+        """Load a prompt from the prompts directory."""
+        try:
+            prompt_path = os.path.join('prompts', filename)
+            with open(prompt_path, 'r', encoding='utf-8') as f:
+                return f.read().strip()
+        except FileNotFoundError:
+            return f"ERROR: Prompt file {filename} not found"
+    
+    @property
+    def EXTRACTION_PROMPT(self):
+        """Load extraction prompt from file."""
+        return self.load_prompt('EXTRACTION_PROMPT.txt')
+    
+    @property
+    def SYS_PROMPT_SHARIA(self):
+        """Load Sharia analysis prompt from file."""
+        return self.load_prompt('SYS_PROMPT_SHARIA_ANALYSIS.txt')
+    
+    @property
+    def INTERACTION_PROMPT_SHARIA(self):
+        """Load Sharia interaction prompt from file."""
+        return self.load_prompt('INTERACTION_PROMPT_SHARIA.txt')
+    
+    @property
+    def REVIEW_MODIFICATION_PROMPT_SHARIA(self):
+        """Load Sharia review modification prompt from file."""
+        return self.load_prompt('REVIEW_MODIFICATION_PROMPT_SHARIA.txt')
+    
+    @property
+    def CONTRACT_REGENERATION_PROMPT(self):
+        """Load contract regeneration prompt from file."""
+        return self.load_prompt('CONTRACT_REGENERATION_PROMPT.txt')
