@@ -28,6 +28,33 @@ from app.utils.text_processing import clean_model_response
 
 logger = logging.getLogger(__name__)
 
+
+def extract_text_from_file(file_path):
+    """
+    Extract text from a file (placeholder implementation).
+    
+    Args:
+        file_path (str): Path to the file to extract text from
+        
+    Returns:
+        str: Extracted text content
+    """
+    try:
+        # Simple implementation - for DOCX files
+        if file_path.lower().endswith('.docx'):
+            doc = DocxDocument(file_path)
+            paragraphs = []
+            for paragraph in doc.paragraphs:
+                if paragraph.text.strip():
+                    paragraphs.append(paragraph.text)
+            return '\n'.join(paragraphs)
+        else:
+            # For other file types, return placeholder
+            return "Text extraction not implemented for this file type"
+    except Exception as e:
+        logger.error(f"Error extracting text from {file_path}: {str(e)}")
+        return f"Error extracting text: {str(e)}"
+
 def build_structured_text_for_analysis(doc: DocxDocument) -> tuple[str, str]:
     """
     Extracts text from a DOCX document, converting it to a markdown-like format

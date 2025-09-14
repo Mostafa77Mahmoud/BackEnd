@@ -454,6 +454,40 @@ def get_session_terms(session_id):
         return jsonify({"error": "Internal server error."}), 500
 
 
+@analysis_bp.route('/sessions', methods=['GET'])
+def get_sessions():
+    """Get sessions list."""
+    logger.info("Fetching sessions list")
+    
+    contracts_collection = get_contracts_collection()
+    
+    if contracts_collection is None:
+        logger.error("Database service unavailable for sessions")
+        return jsonify({"error": "Database service unavailable."}), 503
+    
+    try:
+        # Get recent sessions, sorted by creation date
+        sessions = list(contracts_collection.find(
+            {}, 
+            {"_id": 1, "original_filename": 1, "analysis_type": 1, "jurisdiction": 1, "created_at": 1, "status": 1}
+        ).sort("created_at", -1).limit(50))
+        
+        # Convert ObjectId and datetime objects to JSON-serializable format
+        from bson import ObjectId
+        for session in sessions:
+            if '_id' in session and isinstance(session['_id'], ObjectId):
+                session['_id'] = str(session['_id'])
+            if 'created_at' in session and isinstance(session['created_at'], datetime.datetime):
+                session['created_at'] = session['created_at'].isoformat()
+        
+        logger.info(f"Retrieved {len(sessions)} recent sessions")
+        return jsonify({"sessions": sessions, "count": len(sessions)}), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching sessions: {str(e)}")
+        return jsonify({"error": "Internal server error."}), 500
+
+
 @analysis_bp.route('/history', methods=['GET'])
 def get_analysis_history():
     """Get analysis history."""
@@ -485,6 +519,51 @@ def get_analysis_history():
         
     except Exception as e:
         logger.error(f"Error fetching history: {str(e)}")
+        return jsonify({"error": "Internal server error."}), 500
+
+
+@analysis_bp.route('/statistics', methods=['GET'])
+def get_statistics():
+    """Get system statistics."""
+    logger.info("Fetching system statistics")
+    
+    contracts_collection = get_contracts_collection()
+    terms_collection = get_terms_collection()
+    
+    if contracts_collection is None or terms_collection is None:
+        logger.error("Database service unavailable for statistics")
+        return jsonify({"error": "Database service unavailable."}), 503
+    
+    try:
+        # Count total sessions
+        total_sessions = contracts_collection.count_documents({})
+        
+        # Count sessions by status
+        processing_sessions = contracts_collection.count_documents({"status": "processing"})
+        completed_sessions = contracts_collection.count_documents({"status": "completed"})
+        
+        # Count total terms analyzed
+        total_terms = terms_collection.count_documents({})
+        
+        # Count terms by compliance
+        compliant_terms = terms_collection.count_documents({"is_valid_sharia": True})
+        non_compliant_terms = terms_collection.count_documents({"is_valid_sharia": False})
+        
+        stats = {
+            "total_sessions": total_sessions,
+            "processing_sessions": processing_sessions,
+            "completed_sessions": completed_sessions,
+            "total_terms_analyzed": total_terms,
+            "compliant_terms": compliant_terms,
+            "non_compliant_terms": non_compliant_terms,
+            "timestamp": datetime.datetime.now().isoformat()
+        }
+        
+        logger.info("System statistics retrieved successfully")
+        return jsonify(stats), 200
+        
+    except Exception as e:
+        logger.error(f"Error fetching statistics: {str(e)}")
         return jsonify({"error": "Internal server error."}), 500
 
 

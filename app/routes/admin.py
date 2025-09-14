@@ -4,11 +4,22 @@ Admin Routes
 Administrative endpoints for rules management.
 """
 
+import datetime
 import logging
 from flask import Blueprint, request, jsonify
 
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__)
+
+
+@admin_bp.route('/health', methods=['GET'])
+def admin_health():
+    """Admin health check."""
+    return jsonify({
+        "service": "Shariaa Analyzer Admin",
+        "status": "healthy",
+        "timestamp": datetime.datetime.now().isoformat()
+    }), 200
 
 
 @admin_bp.route('/rules', methods=['GET'])

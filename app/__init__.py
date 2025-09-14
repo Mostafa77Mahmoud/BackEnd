@@ -87,4 +87,4 @@ def register_blueprints(app):
     app.register_blueprint(analysis_bp, url_prefix='/api')
     app.register_blueprint(generation_bp, url_prefix='/api')
     app.register_blueprint(interaction_bp, url_prefix='/api')
-    app.register_blueprint(admin_bp, url_prefix='/api')
+    app.register_blueprint(admin_bp, url_prefix='/api/admin')

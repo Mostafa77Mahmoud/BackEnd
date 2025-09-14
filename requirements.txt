@@ -23,3 +23,4 @@ python-docx
 requests
 unidecode
 werkzeug
+pytest
