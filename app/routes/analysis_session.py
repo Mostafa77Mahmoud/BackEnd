@@ -34,7 +34,7 @@ def get_sessions():
         skip = (page - 1) * limit
         
         # Get sessions with pagination
-        sessions_cursor = contracts_collection.find().sort("created_at", -1).skip(skip).limit(limit)
+        sessions_cursor = contracts_collection.find().sort([("created_at", -1)]).skip(skip).limit(limit)
         sessions_list = list(sessions_cursor)
         
         # Convert ObjectId and datetime objects
@@ -79,7 +79,7 @@ def get_analysis_history():
     
     try:
         # Get only completed analyses
-        history_cursor = contracts_collection.find({"status": "completed"}).sort("completed_at", -1).limit(20)
+        history_cursor = contracts_collection.find({"status": "completed"}).sort([("completed_at", -1)]).limit(20)
         history_list = list(history_cursor)
         
         # Convert ObjectId and datetime objects

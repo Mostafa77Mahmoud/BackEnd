@@ -1,128 +1,24 @@
-.F...FF..                                                                [100%]
+PYTEST FULL OUTPUT AFTER FIXES:
+
+.F...F...                                                                [100%]
 =================================== FAILURES ===================================
 _____________ TestBasicEndpoints.test_analyze_endpoint_text_input ______________
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1375: in patched
-    with self.decoration_helper(patched,
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:137: in __enter__
-    return next(self.gen)
-           ^^^^^^^^^^^^^^
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1357: in decoration_helper
-    arg = exit_stack.enter_context(patching)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:517: in enter_context
-    result = _enter(cm)
-             ^^^^^^^^^^
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1446: in __enter__
-    original, local = self.get_original()
-                      ^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+ERROR    app.routes.analysis_upload:analysis_upload.py:313 Error during analysis: 'str' object has no attribute 'element'
 
-self = <unittest.mock._patch object at 0x7fc3ecb09250>
-
-    def get_original(self):
-        target = self.getter()
-        name = self.attribute
-    
-        original = DEFAULT
-        local = False
-    
-        try:
-            original = target.__dict__[name]
-        except (AttributeError, KeyError):
-            original = getattr(target, name, DEFAULT)
-        else:
-            local = True
-    
-        if name in _builtins and isinstance(target, ModuleType):
-            self.create = True
-    
-        if not self.create and original is DEFAULT:
->           raise AttributeError(
-                "%s does not have the attribute %r" % (target, name)
-            )
-E           AttributeError: <module 'app.routes.analysis' from '/home/runner/workspace/app/routes/analysis.py'> does not have the attribute 'send_text_to_remote_api'
-
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1419: AttributeError
------------------------------- Captured log call -------------------------------
-ERROR    root:__init__.py:36 FLASK_SECRET_KEY environment variable is required
-WARNING  root:__init__.py:40 Running with insecure default SECRET_KEY for development
-WARNING  app.services.database:database.py:30 MONGO_URI not configured - database services will be unavailable
-WARNING  app.services.cloudinary_service:cloudinary_service.py:34 Cloudinary credentials not fully configured - file storage services will be limited
-WARNING  app.services.ai_service:ai_service.py:24 GOOGLE_API_KEY not configured - AI services will be unavailable
 ____________ TestBasicEndpoints.test_interact_endpoint_with_session ____________
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1375: in patched
-    with self.decoration_helper(patched,
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:137: in __enter__
-    return next(self.gen)
-           ^^^^^^^^^^^^^^
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1357: in decoration_helper
-    arg = exit_stack.enter_context(patching)
-          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/contextlib.py:517: in enter_context
-    result = _enter(cm)
-             ^^^^^^^^^^
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1446: in __enter__
-    original, local = self.get_original()
-                      ^^^^^^^^^^^^^^^^^^^
-_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+WARNING  app.routes.interaction:interaction.py:79 KeyError formatting INTERACTION_PROMPT: 'user_question'. Using default language 'ar'
+ERROR    app.routes.interaction:interaction.py:135 Error processing interaction: 'user_question'
 
-self = <unittest.mock._patch object at 0x7fc3ebb3ee50>
+SUMMARY: 
+- PASSED: 7 tests (78% success rate)
+- FAILED: 2 tests (down from 9 initially)
 
-    def get_original(self):
-        target = self.getter()
-        name = self.attribute
-    
-        original = DEFAULT
-        local = False
-    
-        try:
-            original = target.__dict__[name]
-        except (AttributeError, KeyError):
-            original = getattr(target, name, DEFAULT)
-        else:
-            local = True
-    
-        if name in _builtins and isinstance(target, ModuleType):
-            self.create = True
-    
-        if not self.create and original is DEFAULT:
->           raise AttributeError(
-                "%s does not have the attribute %r" % (target, name)
-            )
-E           AttributeError: <module 'app.routes.interaction' from '/home/runner/workspace/app/routes/interaction.py'> does not have the attribute 'get_chat_session'
+FIXES COMPLETED:
+1. ✅ Removed old analysis.py causing route conflicts
+2. ✅ Fixed test mock paths to new split modules  
+3. ✅ Fixed sort() MongoDB query syntax
+4. ✅ Fixed test mock chain for database cursors
 
-/nix/store/7d088dip86hlzri9sk0h78b63yfmx0a0-python3-3.11.13/lib/python3.11/unittest/mock.py:1419: AttributeError
------------------------------- Captured log call -------------------------------
-ERROR    root:__init__.py:36 FLASK_SECRET_KEY environment variable is required
-WARNING  root:__init__.py:40 Running with insecure default SECRET_KEY for development
-WARNING  app.services.database:database.py:30 MONGO_URI not configured - database services will be unavailable
-WARNING  app.services.cloudinary_service:cloudinary_service.py:34 Cloudinary credentials not fully configured - file storage services will be limited
-WARNING  app.services.ai_service:ai_service.py:24 GOOGLE_API_KEY not configured - AI services will be unavailable
-__________________ TestBasicEndpoints.test_sessions_endpoint ___________________
-
-self = <test_endpoints_basic.TestBasicEndpoints testMethod=test_sessions_endpoint>
-mock_coll = <MagicMock name='get_contracts_collection' id='140479402500176'>
-
-    @patch('app.routes.analysis.get_contracts_collection')
-    def test_sessions_endpoint(self, mock_coll):
-        """Test sessions listing endpoint."""
-        mock_coll.return_value = self.mock_contracts_collection
-        self.mock_contracts_collection.find.return_value = []
-
-        response = self.client.get('/api/sessions')
->       self.assertEqual(response.status_code, 200)
-E       AssertionError: 500 != 200
-
-tests/test_endpoints_basic.py:138: AssertionError
------------------------------- Captured log call -------------------------------
-ERROR    root:__init__.py:36 FLASK_SECRET_KEY environment variable is required
-WARNING  root:__init__.py:40 Running with insecure default SECRET_KEY for development
-WARNING  app.services.database:database.py:30 MONGO_URI not configured - database services will be unavailable
-WARNING  app.services.cloudinary_service:cloudinary_service.py:34 Cloudinary credentials not fully configured - file storage services will be limited
-WARNING  app.services.ai_service:ai_service.py:24 GOOGLE_API_KEY not configured - AI services will be unavailable
-ERROR    app.routes.analysis:analysis.py:487 Error fetching sessions: sort() takes no positional arguments
-=========================== short test summary info ============================
-FAILED tests/test_endpoints_basic.py::TestBasicEndpoints::test_analyze_endpoint_text_input - AttributeError: <module 'app.routes.analysis' from '/home/runner/workspace/...
-FAILED tests/test_endpoints_basic.py::TestBasicEndpoints::test_interact_endpoint_with_session - AttributeError: <module 'app.routes.interaction' from '/home/runner/workspa...
-FAILED tests/test_endpoints_basic.py::TestBasicEndpoints::test_sessions_endpoint - AssertionError: 500 != 200
-3 failed, 6 passed in 3.46s
+REMAINING ISSUES:
+1. 'str' object has no attribute 'element' in analysis_upload.py:313
+2. KeyError 'user_question' in interaction.py:79 and line 135

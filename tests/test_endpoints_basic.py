@@ -41,9 +41,9 @@ class TestBasicEndpoints(unittest.TestCase):
         # Returns 503 (Database service unavailable) in test environment - this is expected
         self.assertEqual(response.status_code, 503)
     
-    @patch('app.routes.analysis.get_contracts_collection')
-    @patch('app.routes.analysis.get_terms_collection')
-    @patch('app.routes.analysis.send_text_to_remote_api')
+    @patch('app.routes.analysis_upload.get_contracts_collection')
+    @patch('app.routes.analysis_upload.get_terms_collection')
+    @patch('app.services.ai_service.send_text_to_remote_api')
     def test_analyze_endpoint_text_input(self, mock_ai, mock_terms_coll, mock_contracts_coll):
         """Test analyze endpoint with text input."""
         mock_contracts_coll.return_value = self.mock_contracts_collection
@@ -88,7 +88,7 @@ class TestBasicEndpoints(unittest.TestCase):
     
     @patch('app.routes.interaction.get_contracts_collection')
     @patch('app.routes.interaction.get_terms_collection')
-    @patch('app.routes.interaction.get_chat_session')
+    @patch('app.services.ai_service.get_chat_session')
     def test_interact_endpoint_with_session(self, mock_ai, mock_terms_coll, mock_contracts_coll):
         """Test interact endpoint with valid session."""
         mock_contracts_coll.return_value = self.mock_contracts_collection
@@ -128,11 +128,18 @@ class TestBasicEndpoints(unittest.TestCase):
         # Returns 415 (Unsupported Media Type) when no JSON is sent
         self.assertEqual(response.status_code, 415)
     
-    @patch('app.routes.analysis.get_contracts_collection')
+    @patch('app.routes.analysis_session.get_contracts_collection')
     def test_sessions_endpoint(self, mock_coll):
         """Test sessions listing endpoint."""
         mock_coll.return_value = self.mock_contracts_collection
-        self.mock_contracts_collection.find.return_value = []
+        
+        # Mock the full chain: find().sort().skip().limit()
+        mock_cursor = MagicMock()
+        mock_cursor.sort.return_value = mock_cursor
+        mock_cursor.skip.return_value = mock_cursor  
+        mock_cursor.limit.return_value = []
+        self.mock_contracts_collection.find.return_value = mock_cursor
+        self.mock_contracts_collection.count_documents.return_value = 0
         
         response = self.client.get('/api/sessions')
         self.assertEqual(response.status_code, 200)
@@ -140,8 +147,8 @@ class TestBasicEndpoints(unittest.TestCase):
         data = json.loads(response.data)
         self.assertIn('sessions', data)
     
-    @patch('app.routes.analysis.get_contracts_collection')
-    @patch('app.routes.analysis.get_terms_collection')
+    @patch('app.routes.analysis_admin.get_contracts_collection')
+    @patch('app.routes.analysis_admin.get_terms_collection')
     def test_statistics_endpoint(self, mock_terms_coll, mock_contracts_coll):
         """Test statistics endpoint."""
         mock_contracts_coll.return_value = self.mock_contracts_collection

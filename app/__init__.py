@@ -79,7 +79,7 @@ def configure_logging(app):
 
 def register_blueprints(app):
     """Register application blueprints."""
-    from app.routes.analysis import analysis_bp
+    from app.routes import analysis_bp
     from app.routes.generation import generation_bp
     from app.routes.interaction import interaction_bp
     from app.routes.admin import admin_bp
