@@ -9,3 +9,17 @@ unidecode
 langdetect
 cloudinary
 requests
+bson
+cloudinary
+dnspython
+docx
+Flask
+Flask-CORS
+google-generativeai
+gunicorn
+langdetect
+pymongo[srv]
+python-docx
+requests
+unidecode
+werkzeug
