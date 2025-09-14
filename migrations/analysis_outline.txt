@@ -1,67 +1,83 @@
-ANALYSIS.PY STRUCTURE OUTLINE
+ANALYSIS FILE STRUCTURE OUTLINE
 ===============================
 
-File: app/routes/analysis.py
-Total Lines: 862
+Original File: app/routes/analysis.py
+Total Lines: 862 lines
+Analysis Date: 2025-09-14
 
-IMPORTS & SETUP (Lines 1-29):
-- Module imports
-- Blueprint setup: analysis_bp = Blueprint('analysis', __name__)
-- Temporary folder configuration
+ROUTE MAPPING ANALYSIS:
+======================
 
-ENDPOINTS & FUNCTIONS:
+Line Range  | Route                                    | Method | Function Name           | Primary Purpose
+-----------|------------------------------------------|--------|-------------------------|------------------
+31-323     | /analyze                                 | POST   | analyze_contract        | Main contract analysis
+324-383    | /analysis/<analysis_id>                  | GET    | get_analysis_results    | Retrieve analysis results  
+384-423    | /session/<session_id>                    | GET    | get_session_details     | Get session information
+424-456    | /terms/<session_id>                      | GET    | get_session_terms       | Retrieve extracted terms
+457-490    | /sessions                                | GET    | get_sessions            | List all sessions
+491-524    | /history                                 | GET    | get_analysis_history    | Analysis history
+525-569    | /statistics                              | GET    | get_statistics          | System statistics
+570-614    | /stats/user                              | GET    | get_user_stats          | User-specific stats
+615-711    | /preview_contract/<id>/<type>           | GET    | preview_contract        | Generate PDF preview
+712-775    | /download_pdf_preview/<id>/<type>       | GET    | download_pdf_preview    | PDF download handler
+776-855    | /feedback/expert                         | POST   | submit_expert_feedback  | Expert review submission
+856-862    | /health                                  | GET    | health_check            | Health status
 
-1. @analysis_bp.route('/analyze', methods=['POST']) - Line 31
-   Function: analyze_contract() - Lines 32-323
-   Description: Analyze contract for Sharia compliance (file uploads or text input)
+FUNCTIONAL GROUP ANALYSIS:
+=========================
 
-2. @analysis_bp.route('/analysis/<analysis_id>', methods=['GET']) - Line 324
-   Function: get_analysis_results(analysis_id) - Lines 325-383
-   Description: Retrieve analysis results by analysis ID
+GROUP 1 - Upload & Analysis Processing (293 lines)
+- Lines: 31-323
+- Routes: /analyze
+- Core Functionality: File upload, text extraction, AI analysis
+- Dependencies: AI service, database, file processing
 
-3. @analysis_bp.route('/session/<session_id>', methods=['GET']) - Line 384
-   Function: get_session_details(session_id) - Lines 385-423
-   Description: Fetch session details including contract info
+GROUP 2 - Data Retrieval & Terms (196 lines)  
+- Lines: 324-456
+- Routes: /analysis/<id>, /session/<id>, /terms/<id>
+- Core Functionality: Session and analysis result retrieval
+- Dependencies: Database queries, data formatting
 
-4. @analysis_bp.route('/terms/<session_id>', methods=['GET']) - Line 424
-   Function: get_session_terms(session_id) - Lines 425-456
-   Description: Retrieve all terms for a session
+GROUP 3 - Session Management (68 lines)
+- Lines: 457-524  
+- Routes: /sessions, /history
+- Core Functionality: Session listing and history
+- Dependencies: Database pagination, date formatting
 
-5. @analysis_bp.route('/sessions', methods=['GET']) - Line 457
-   Function: get_sessions() - Lines 458-490
-   Description: List recent sessions with pagination
+GROUP 4 - Analytics & Admin (170 lines)
+- Lines: 525-614, 776-855, 856-862
+- Routes: /statistics, /stats/user, /feedback/expert, /health
+- Core Functionality: System metrics, admin operations
+- Dependencies: Database aggregation, expert feedback
 
-6. @analysis_bp.route('/history', methods=['GET']) - Line 491
-   Function: get_analysis_history() - Lines 492-524
-   Description: Retrieve analysis history
+GROUP 5 - Document Generation (160 lines)
+- Lines: 615-775
+- Routes: /preview_contract/<id>/<type>, /download_pdf_preview/<id>/<type>
+- Core Functionality: PDF generation and download
+- Dependencies: Template rendering, cloud storage
 
-7. @analysis_bp.route('/statistics', methods=['GET']) - Line 525
-   Function: get_statistics() - Lines 526-569
-   Description: Provide system statistics
+SHARED UTILITIES IDENTIFIED:
+============================
 
-8. @analysis_bp.route('/stats/user', methods=['GET']) - Line 570
-   Function: get_user_stats() - Lines 571-614
-   Description: Provide user-specific statistics
+1. Temporary file setup (lines 23-28)
+2. Database collection getters (imported)
+3. Logging configuration (logger setup)
+4. Common error handling patterns
+5. JSON response formatting utilities
 
-9. @analysis_bp.route('/preview_contract/<session_id>/<contract_type>', methods=['GET']) - Line 615
-   Function: preview_contract(session_id, contract_type) - Lines 616-711
-   Description: Generate PDF previews of contracts
+SPLIT STRATEGY RECOMMENDATION:
+=============================
 
-10. @analysis_bp.route('/download_pdf_preview/<session_id>/<contract_type>', methods=['GET']) - Line 712
-    Function: download_pdf_preview(session_id, contract_type) - Lines 713-775
-    Description: Proxy PDF downloads from Cloudinary
+Split into 5 focused modules:
+1. analysis_upload.py - Upload and main analysis (GROUP 1)
+2. analysis_terms.py - Data retrieval operations (GROUP 2)  
+3. analysis_session.py - Session management (GROUP 3)
+4. analysis_admin.py - Admin and statistics (GROUP 4)
+5. analysis_generation.py - PDF operations (GROUP 5)
 
-11. @analysis_bp.route('/feedback/expert', methods=['POST']) - Line 776
-    Function: submit_expert_feedback() - Lines 777-855
-    Description: Submit expert feedback on analysis
-
-12. @analysis_bp.route('/health', methods=['GET']) - Line 856
-    Function: health_check() - Lines 857-862
-    Description: Health check endpoint
-
-POTENTIAL HELPER FUNCTIONS TO EXTRACT:
-- File processing utilities (used in analyze_contract)
-- Text extraction and structuring
-- Cloudinary upload helpers
-- Database query patterns
-- Error handling patterns
+Benefits:
+- Each module under 300 lines
+- Clear separation of concerns
+- Logical functional grouping
+- Maintained route structure
+- Single blueprint coordination
