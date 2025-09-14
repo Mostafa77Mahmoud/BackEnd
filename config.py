@@ -1,9 +1,10 @@
+import os
 
 # --- START OF FILE config.py ---
 
-CLOUDINARY_CLOUD_NAME = "dr6jicgld"
-CLOUDINARY_API_KEY = "961637465179968"
-CLOUDINARY_API_SECRET = "l214XxDSlyTHjDDBqGuItCMAT0U"
+CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME", "dr6jicgld")
+CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY", "961637465179968")
+CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET", "l214XxDSlyTHjDDBqGuItCMAT0U")
 CLOUDINARY_BASE_FOLDER = "shariaa_analyzer_uploads"
 
 CLOUDINARY_UPLOAD_FOLDER = "contract_uploads"
@@ -13,13 +14,13 @@ CLOUDINARY_MODIFIED_CONTRACTS_SUBFOLDER = "modified_contracts"
 CLOUDINARY_MARKED_CONTRACTS_SUBFOLDER = "marked_contracts"
 CLOUDINARY_PDF_PREVIEWS_SUBFOLDER = "pdf_previews"
 
-GOOGLE_API_KEY = "AIzaSyCONQhwF4REueSByv6H3fA7g7PKCrUpXrk"
+GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY", "AIzaSyCONQhwF4REueSByv6H3fA7g7PKCrUpXrk")
 ##"AIzaSyAspAo_UHjOCKxbmtaPCtldZ7g6XowHoV4"
 ##"AIzaSyCLfpievRZO_J_Ryme_1-1T4SjVBOPCfjI"
 
 ##"AIzaSyAIPk1An1O6sZiro64Q4R9PjVrqvPkSVvQ"
 ##"AIzaSyBbidR_bEfiMrhOufE4PAHrYEBvuPuqakg"
-MONGO_URI = "mongodb+srv://Shariaa_analyzer:FYwkgVa2wx7cxy83@shariaadb.9sczz2u.mongodb.net/shariaa_analyzer_db?retryWrites=true&w=majority&appName=ShariaaDB"
+MONGO_URI = os.environ.get("MONGO_URI", "mongodb+srv://Shariaa_analyzer:FYwkgVa2wx7cxy83@shariaadb.9sczz2u.mongodb.net/shariaa_analyzer_db?retryWrites=true&w=majority&appName=ShariaaDB")
 
 
 MODEL_NAME = "gemini-2.5-flash"
@@ -29,9 +30,9 @@ MODEL_NAME = "gemini-2.5-flash"
 
 
 
-LIBREOFFICE_PATH = r"C:\Program Files\LibreOffice\program\soffice.exe"
+LIBREOFFICE_PATH = "libreoffice"  # System-wide LibreOffice installation in Replit
 
-FLASK_SECRET_KEY = "your_secret_key_here"
+FLASK_SECRET_KEY = os.environ.get("FLASK_SECRET_KEY", "your_secret_key_here")
 
 TEMPERATURE = 0
 
