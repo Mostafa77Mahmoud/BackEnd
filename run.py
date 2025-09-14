@@ -4,8 +4,11 @@ Flask application entry point for the Shariaa Analyzer backend.
 This file serves as the main entry point for both development and production.
 """
 
-from api_server import app
+from app import create_app
 import os
+
+# Create Flask app using factory pattern
+app = create_app()
 
 if __name__ == "__main__":
     # Development server configuration
