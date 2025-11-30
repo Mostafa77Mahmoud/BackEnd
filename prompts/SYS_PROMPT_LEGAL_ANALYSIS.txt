@@ -82,30 +82,30 @@ Contract text (may contain identifiers `[[ID:...]]` or be in Markdown format).
 
 ```json
 [
-  {{
+  {{{{
     "term_id": "clause_1",
     "term_text": "The employee waives all rights to claim any form of compensation for overtime work",
     "is_valid_legal": false,
     "legal_issue": "This clause violates mandatory overtime compensation requirements under employment law. Employees cannot waive their statutory right to overtime pay",
     "reference_number": "Article 108 of Labor Law No. 12 of 2003",
     "modified_term": "The employee shall be compensated for overtime work at a rate of 1.5 times the regular hourly wage, as required by applicable labor law"
-  }},
-  {{
+  }}}},
+  {{{{
     "term_id": "clause_2",
     "term_text": "Either party may terminate this agreement with 30 days written notice",
     "is_valid_legal": true,
     "legal_issue": null,
     "reference_number": "Article 89 of Civil Code - termination notice provisions",
     "modified_term": null
-  }},
-  {{
+  }}}},
+  {{{{
     "term_id": "[[ID:para_7]]",
     "term_text": "[[ID:para_7]] Any disputes arising from this contract shall be resolved exclusively through arbitration in [City], with no right to appeal",
     "is_valid_legal": false,
     "legal_issue": "Complete exclusion of appeal rights may be unenforceable as it violates the fundamental right to judicial review under constitutional law",
     "reference_number": "Article 68 of Arbitration Law No. 27 of 1994, Constitutional Article 97",
     "modified_term": "[[ID:para_7]] Any disputes arising from this contract shall be resolved through arbitration in [City], subject to limited appeal rights as provided by applicable arbitration law"
-  }}
+  }}}}
 ]
 ```
 
