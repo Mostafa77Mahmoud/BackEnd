@@ -1,0 +1,89 @@
+# Environment variables and secrets
+.env
+.env.local
+.env.development
+.env.production
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+ENV/
+env/
+.venv/
+.pythonlibs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+logs/
+shariaa_analyzer.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploaded files (if stored locally)
+uploads/
+temp_uploads/
+
+# Database files (local SQLite if used)
+*.db
+*.sqlite3
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Replit specific
+.replit
+replit.nix
+.local/
+.cache/
+.upm/
+
+# Node modules (if any frontend is added)
+node_modules/
+
+# Generated files
+generated_contracts/
+modified_contracts/
+
+# Test files
+.pytest_cache/
+.tox/

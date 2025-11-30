@@ -266,3 +266,13 @@
  * Running on http://172.31.76.194:5000
 2025-11-30 12:19:32,575 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
 2025-11-30 12:19:32,980 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:19:32] "GET / HTTP/1.1" 200 -
+2025-11-30 12:28:43,062 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 12:28:45,065 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 12:28:45,113 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 12:28:45,942 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 12:28:46,016 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.76.194:5000
+2025-11-30 12:28:46,016 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 12:28:47,049 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:28:47] "GET / HTTP/1.1" 200 -

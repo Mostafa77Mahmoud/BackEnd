@@ -1,92 +1,121 @@
-# Shariaa Contract Analyzer Backend
+# Sharia Contract Analyzer Backend
 
 ## Overview
 
-The Shariaa Contract Analyzer is a sophisticated Flask-based backend system designed to analyze legal contracts for compliance with Islamic law (Sharia) principles, specifically following AAOIFI (Accounting and Auditing Organization for Islamic Financial Institutions) standards. The system also supports general legal compliance analysis for various jurisdictions.
+Flask-based backend system for analyzing legal contracts for Sharia (Islamic law) compliance following AAOIFI standards. Uses Google Gemini 2.0 Flash for AI-powered analysis.
 
-**Key Features:**
+## Key Features
+
 - Multi-format contract processing (DOCX, PDF, TXT)
-- AI-powered compliance analysis using Google Gemini 2.0 Flash
-- Interactive user consultation with real-time Q&A
+- AI-powered Sharia compliance analysis
+- Interactive user consultation with Q&A
 - Expert review system integration
-- Automated contract modification and regeneration
-- Cloud-based document management with Cloudinary
-- Multi-language support (Arabic and English)
-- Modular architecture with service-oriented design
+- Contract modification and regeneration
+- Cloud document management (Cloudinary)
+- Arabic and English language support
 
-## User Preferences
+## Tech Stack
 
-Preferred communication style: Simple, everyday language.
+| Component | Technology |
+|-----------|------------|
+| Framework | Flask |
+| Database | MongoDB Atlas |
+| AI | Google Gemini 2.0 Flash |
+| Storage | Cloudinary |
+| Documents | python-docx, LibreOffice |
 
-## System Architecture
+## Project Structure
 
-### Application Framework
-- **Flask Application Factory Pattern**: Modular Flask setup with blueprints for route organization
-- **Service Layer Architecture**: Clear separation between routes, services, and utilities
-- **Configuration Management**: Environment-based configuration with secure defaults
+```
+app/
+  __init__.py              # Flask app factory
+  routes/                  # API endpoints
+    analysis_upload.py     # Contract upload and analysis
+    interaction.py         # Q&A and modifications
+    generation.py          # Contract generation
+    analysis_session.py    # Session management
+    analysis_terms.py      # Terms handling
+    analysis_admin.py      # Admin and statistics
+    file_search.py         # AAOIFI search
+  services/
+    ai_service.py          # Google Gemini integration
+    database.py            # MongoDB operations
+    file_search.py         # AAOIFI standards search
+    cloudinary_service.py  # File storage
+    document_processor.py  # DOCX/PDF processing
+  utils/
+    file_helpers.py        # File utilities
+config/
+  default.py               # Configuration and prompts
+prompts/                   # AI system prompts
+context/                   # AAOIFI standards documents
+```
 
-### Core Services
-- **Database Service**: MongoDB Atlas integration for document storage with graceful fallback handling
-- **AI Service**: Google Gemini 2.0 Flash integration for contract analysis and text processing
-- **Cloud Storage Service**: Cloudinary integration for document management with automatic fallbacks
-- **Document Processing Service**: LibreOffice headless conversion for DOCX to PDF transformation
+## API Endpoints (No /api prefix)
 
-### API Architecture
-- **RESTful Design**: Well-structured endpoints following REST principles
-- **Blueprint Organization**: Routes separated by functional areas (analysis, generation, interaction, admin)
-- **Comprehensive Error Handling**: Graceful degradation when services are unavailable
-- **CORS Configuration**: Configured for web client integration
+### Analysis
+- `POST /analyze` - Upload and analyze contracts
+- `GET /session/<session_id>` - Get session details
+- `GET /terms/<session_id>` - Get analyzed terms
+- `GET /sessions` - List all sessions
+- `GET /history` - Analysis history
 
-### Data Architecture
-- **Document Schema**: Structured storage for contracts, analysis results, and user interactions
-- **Session Management**: UUID-based session tracking for multi-step processes
-- **Term Extraction**: Structured term identification with unique IDs for precise modification tracking
+### Interaction
+- `POST /interact` - Interactive Q&A consultation
+- `POST /review_modification` - Review user modifications
+- `POST /confirm_modification` - Confirm term changes
 
-### Processing Pipeline
-- **File Upload Processing**: Multi-format support with secure filename handling
-- **Text Extraction**: AI-powered text extraction preserving document structure
-- **Compliance Analysis**: Dual-mode analysis (Sharia/Legal) with jurisdiction support
-- **Interactive Consultation**: Real-time Q&A with context-aware responses
-- **Contract Modification**: User-guided modification with expert review integration
+### Generation
+- `POST /generate_from_brief` - Generate from brief
+- `POST /generate_modified_contract` - Generate modified version
+- `POST /generate_marked_contract` - Generate with highlights
+- `GET /preview_contract/<session_id>/<type>` - Preview
+- `GET /download_pdf_preview/<session_id>/<type>` - Download PDF
 
-### Prompt Management System
-- **Structured Prompt Library**: Organized prompt files for different analysis types and languages
-- **Template-based Approach**: Parameterized prompts for consistent AI interactions
-- **Multi-language Support**: Language-specific prompts for Arabic and English analysis
+### Admin
+- `GET /statistics` - System statistics
+- `GET /stats/user` - User statistics
+- `POST /feedback/expert` - Expert feedback
+- `GET /health` - Health check
 
-### Security & Performance
-- **Input Validation**: Comprehensive input sanitization and file type checking
-- **Rate Limiting**: Built-in protection against abuse
-- **Secure File Handling**: Temporary file management with automatic cleanup
-- **Resource Management**: Optimized for cloud deployment with configurable workers
+### File Search
+- `POST /file_search/search` - Search AAOIFI standards
+- `POST /file_search/extract_terms` - Extract terms
+- `GET /file_search/health` - Service health
 
-## External Dependencies
+## Environment Variables
 
-### AI Services
-- **Google Generative AI (Gemini 2.0 Flash)**: Primary AI engine for contract analysis, text extraction, and natural language processing
-- **Language Detection**: Automatic language detection for appropriate prompt selection
+**Required Secrets:**
+- `GEMINI_API_KEY` - Google Generative AI key
+- `MONGODB_URI` - MongoDB connection string
+- `CLOUDINARY_URL` - Cloudinary config
 
-### Database
-- **MongoDB Atlas**: Primary database for storing contracts, analysis results, terms, and expert feedback
-- **Redis Cache**: Session storage and caching layer (referenced in architecture docs)
+**Optional:**
+- `FLASK_SECRET_KEY` - Session secret
+- `GEMINI_FILE_SEARCH_API_KEY` - Dedicated file search key
 
-### Cloud Storage
-- **Cloudinary**: Document storage and management with organized folder structure for different document types
+## Running
 
-### Document Processing
-- **LibreOffice Headless**: Server-side document conversion (DOCX to PDF)
-- **python-docx**: DOCX document manipulation and generation
-- **unidecode**: Text normalization and filename sanitization
+```bash
+python run.py
+```
 
-### Web Framework & Infrastructure
-- **Flask**: Core web framework with CORS support
-- **Gunicorn**: WSGI server for production deployment
-- **Werkzeug**: Secure file upload handling
+Server runs on port 5000.
 
-### Development & Monitoring
-- **Logging Infrastructure**: Comprehensive logging system for debugging and monitoring
-- **Replit Environment**: Optimized for Replit hosting with appropriate bindings and configurations
+## Analysis Flow
 
-### Configuration Management
-- **Environment Variables**: Secure credential management for API keys and database connections
-- **Multi-environment Support**: Configuration classes for development, testing, and production
+1. Contract uploaded/text submitted
+2. Language detected (Arabic/English)
+3. AAOIFI standards searched for relevant context
+4. AI analyzes contract with AAOIFI context
+5. Terms extracted with compliance status
+6. Results stored in MongoDB
+7. User can interact, modify, and generate new versions
+
+## Recent Updates
+
+- Fixed AI service function signatures
+- Integrated file search for AAOIFI context
+- Added language detection for output formatting
+- Improved JSON parsing for AI responses
+- Created proper .gitignore for security
