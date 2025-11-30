@@ -114,6 +114,15 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### November 30, 2025 - File Search Service Improvements
+- **file_search.py**: Added version checking for google-genai API compatibility
+  - `check_file_search_support()` function to detect File Search API availability
+  - Graceful degradation when API is not available (older google-genai versions)
+  - Enhanced `__init__()` with `file_search_enabled` flag and safe client creation
+  - Better error messages in `initialize_store()` when API is unavailable
+- **requirements.txt**: Cleaned up duplicates, specified minimum versions (google-genai>=1.50.0)
+- **Logging**: Fixed to work in all modes (Debug and Production) - connection status now visible
+
 ### November 30, 2025 - Complete Migration from Old Backend
 - **document_processor.py**: Complete dict-based fallback with table handling, signature blocks for Arabic/English, convert_docx_to_pdf with 180s timeout and LibreOffice support
 - **cloudinary_service.py**: Full upload_to_cloudinary_helper with PDF-specific access_mode="public" and debug logging
