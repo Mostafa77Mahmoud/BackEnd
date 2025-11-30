@@ -14,4 +14,3 @@ from . import analysis_upload
 from . import analysis_terms  
 from . import analysis_session
 from . import analysis_admin
-from . import analysis_generation
