@@ -4,6 +4,9 @@ Flask application entry point for the Shariaa Analyzer backend.
 This file serves as the main entry point for both development and production.
 """
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from app import create_app
 import os
 

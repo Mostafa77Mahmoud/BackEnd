@@ -68,10 +68,11 @@ def interact():
         analysis_type = session_doc.get("analysis_type", "sharia")
             
         # Select appropriate interaction prompt
-        if analysis_type == "legal":
-            interaction_prompt = getattr(config, 'INTERACTION_PROMPT_LEGAL', config.INTERACTION_PROMPT_SHARIA)
-        else:
-            interaction_prompt = config.INTERACTION_PROMPT_SHARIA
+        # Select appropriate interaction prompt
+        # if analysis_type == "legal":
+        #     interaction_prompt = getattr(config, 'INTERACTION_PROMPT_LEGAL', config.INTERACTION_PROMPT_SHARIA)
+        # else:
+        interaction_prompt = config.INTERACTION_PROMPT_SHARIA
         
         try:
             formatted_interaction_prompt = interaction_prompt.format(output_language=contract_lang)
@@ -182,10 +183,11 @@ def review_modification():
         analysis_type = session_doc.get("analysis_type", "sharia")
             
         # Select appropriate review prompt
-        if analysis_type == "legal":
-            review_prompt = getattr(config, 'REVIEW_MODIFICATION_PROMPT_LEGAL', '')
-        else:
-            review_prompt = getattr(config, 'REVIEW_MODIFICATION_PROMPT_SHARIA', '')
+        # Select appropriate review prompt
+        # if analysis_type == "legal":
+        #     review_prompt = getattr(config, 'REVIEW_MODIFICATION_PROMPT_LEGAL', '')
+        # else:
+        review_prompt = getattr(config, 'REVIEW_MODIFICATION_PROMPT_SHARIA', '')
         
         try:
             formatted_review_prompt = review_prompt.format(output_language=contract_lang)

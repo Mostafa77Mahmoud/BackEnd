@@ -1,0 +1,235 @@
+2025-11-30 12:40:27,732 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 12:40:29,488 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 12:40:29,632 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 12:40:29,632 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:08:12,170 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:08:14,006 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:08:14,174 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:08:15,348 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:08:15,408 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:08:15,409 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:08:49,291 - app.routes.file_search - INFO - Health check endpoint called
+2025-11-30 13:08:49,294 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:08:49] "GET /api/file_search/health HTTP/1.1" 200 -
+2025-11-30 13:08:52,575 - app.routes.file_search - INFO - Store info endpoint called
+2025-11-30 13:08:53,354 - app.services.file_search - INFO - FileSearchService initialized using API Key: ****tmCM
+2025-11-30 13:08:53,354 - app.services.file_search - INFO - Model: gemini-2.5-flash
+2025-11-30 13:08:53,354 - app.routes.file_search - INFO - Store info retrieved: error
+2025-11-30 13:08:53,357 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:08:53] "GET /api/file_search/store-info HTTP/1.1" 200 -
+2025-11-30 13:10:02,730 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:10:04,477 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:10:04,612 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:10:05,690 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:10:05,724 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:10:05,724 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:17:50,773 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:17:52,688 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:17:52,857 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:17:53,998 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:17:54,038 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:17:54,038 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:18:34,238 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:18:34] "[33mOPTIONS /terms/83747c92-e75a-4b71-91d3-13981e22b6f6 HTTP/1.1[0m" 404 -
+2025-11-30 13:18:34,240 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:18:34] "[33mOPTIONS /session/83747c92-e75a-4b71-91d3-13981e22b6f6 HTTP/1.1[0m" 404 -
+2025-11-30 13:18:42,717 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:18:42] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:19:01,703 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:19:03,484 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:19:03,637 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:19:04,697 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:19:04,731 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:19:04,731 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:19:10,566 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:19:10] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:20:31,809 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:20:31] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:21:23,892 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:21:23] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:21:47,755 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:21:49,654 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:21:49,832 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:21:50,982 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:21:51,020 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:21:51,022 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:21:52,552 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:21:52] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:21:56,015 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:21:56] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:22:49,500 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:22:51,255 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:22:51,381 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:22:52,426 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:22:52,460 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:22:52,460 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:22:55,489 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:22:55] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:24:24,092 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:24:25,882 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:24:26,066 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:24:27,135 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:24:27,174 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:24:27,175 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:24:30,882 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:24:30] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:25:29,002 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:25:30,828 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:25:30,960 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:25:32,014 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:25:32,049 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:25:32,049 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:25:35,081 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:25:35] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:26:06,278 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:26:07,835 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:26:07,960 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:26:09,260 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:26:09,296 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:26:09,296 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:26:17,286 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:26:17] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:29:09,266 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:29:11,114 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:29:11,279 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:29:12,389 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:29:12,428 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:29:12,429 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:29:15,473 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:29:15] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:29:22,216 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:29:22] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:30:55,120 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:30:55] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:31:14,555 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:31:14] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:31:17,780 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:31:17] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:31:50,125 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:31:50] "[33mGET / HTTP/1.1[0m" 404 -
+2025-11-30 13:31:52,568 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:31:52] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-30 13:33:27,744 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:33:27] "[33mGET / HTTP/1.1[0m" 404 -
+2025-11-30 13:34:09,319 - app.routes.file_search - INFO - Health check endpoint called
+2025-11-30 13:34:09,320 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:34:09] "GET /api/file_search/health HTTP/1.1" 200 -
+2025-11-30 13:34:55,240 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:34:57,133 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:34:57,281 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:34:58,995 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:34:59,074 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:34:59,074 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:35:02,471 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:35:02] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:35:13,861 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:35:13] "[33mGET / HTTP/1.1[0m" 404 -
+2025-11-30 13:36:01,236 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:36:01] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:37:31,932 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:37:31] "[33mGET /debug/routes HTTP/1.1[0m" 404 -
+2025-11-30 13:38:45,819 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:38:47,625 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:38:47,820 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:38:49,139 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:38:49,180 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:38:49,181 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:38:52,574 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:38:52] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:38:55,334 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:38:55] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:38:56,456 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:38:56] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:39:11,502 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:39:11] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:40:08,179 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:40:08] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:40:15,307 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:40:16,183 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:40:16] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:40:17,322 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:40:17,501 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:40:18,688 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:40:18,732 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:40:18,733 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:40:20,517 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:40:20] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:40:21,464 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:40:21] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:40:22,523 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:40:22] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:41:31,444 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:41:33,378 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:41:33,506 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:41:34,646 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:41:34,683 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:41:34,683 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:41:38,152 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:41:38] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:42:02,288 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:42:02] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:42:10,710 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:42:10] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:43:29,042 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:43:29] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:43:32,606 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:43:32] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:45:59,284 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:46:01,447 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:46:01,573 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:46:02,694 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:46:02,737 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:46:02,738 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:46:05,648 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:46:05] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:46:08,156 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:46:08] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:46:09,538 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:46:09] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:46:10,489 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:46:10] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:46:12,224 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:46:12] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:47:01,939 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:47:01] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:47:04,324 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:47:04] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:49:37,487 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:49:37] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:50:14,200 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:50:14] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:50:17,117 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:50:17] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:50:46,120 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:50:46] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:50:50,937 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:50:50] "[33mOPTIONS /analyze HTTP/1.1[0m" 404 -
+2025-11-30 13:51:50,016 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:51:51,883 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:51:51,996 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:51:53,042 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:51:53,076 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:51:53,077 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:51:58,918 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:51:58] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 13:52:54,115 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:52:54] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 13:52:56,980 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:52:56] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 13:53:23,833 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:53:23] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 13:56:21,447 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:56:23,304 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:56:23,467 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:56:24,570 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 13:56:24,611 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 13:56:24,611 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:56:37,347 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:56:37] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 13:59:38,632 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:59:38] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 13:59:44,247 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:59:44] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 13:59:49,992 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:59:49] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 14:01:10,076 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 14:01:11,884 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 14:01:12,134 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 14:01:13,385 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 14:01:13,425 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://192.168.1.3:5000
+2025-11-30 14:01:13,425 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 14:01:16,932 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:01:16] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 14:01:18,943 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:01:18] "OPTIONS /analyze HTTP/1.1" 200 -

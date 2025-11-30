@@ -3,7 +3,7 @@ Flask-CORS
 gunicorn
 pymongo[srv]
 dnspython
-google-generativeai
+google-genai
 python-docx
 unidecode
 langdetect
@@ -11,3 +11,4 @@ cloudinary
 requests
 werkzeug
 pytest
+python-dotenv

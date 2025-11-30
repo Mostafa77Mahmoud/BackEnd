@@ -1,15 +1,16 @@
 """
 AI Service for Google Generative AI integration.
-Consolidated from original remote_api.py
+Refactored to use the new google-genai SDK.
 """
 
 import pathlib
-import google.generativeai as genai
 import time
 import traceback
 import json
 import logging
 from flask import current_app
+from google import genai
+from google.genai import types
 
 logger = logging.getLogger(__name__)
 
@@ -20,15 +21,29 @@ def init_ai_service(app):
     """Initialize AI service with configuration."""
     try:
         google_api_key = app.config.get('GOOGLE_API_KEY')
-        if not google_api_key:
-            logger.warning("GOOGLE_API_KEY not configured - AI services will be unavailable")
+        gemini_api_key = app.config.get('GEMINI_API_KEY')
+        
+        if not google_api_key and not gemini_api_key:
+            logger.warning("GOOGLE_API_KEY/GEMINI_API_KEY not configured - AI services will be unavailable")
             return
             
-        genai.configure(api_key=google_api_key)
-        logger.info("Google Generative AI configured successfully")
+        logger.info("Google GenAI service initialized (client will be created per request)")
     except Exception as e:
-        logger.error(f"Error configuring Google Generative AI: {e}")
+        logger.error(f"Error initializing Google GenAI service: {e}")
         traceback.print_exc()
+
+from app.utils.logging_utils import mask_key
+
+def get_client():
+    """Get a configured GenAI client."""
+    api_key = current_app.config.get('GEMINI_API_KEY') or current_app.config.get('GOOGLE_API_KEY')
+    if not api_key:
+        raise ValueError("API Key not configured")
+    
+    # Log key usage (masked)
+    logger.info(f"Creating GenAI client with API Key: {mask_key(api_key)}")
+    
+    return genai.Client(api_key=api_key)
 
 def get_chat_session(session_id_key: str, system_instruction: str | None = None, force_new: bool = False):
     """Get or create a chat session for AI interactions."""
@@ -44,24 +59,31 @@ def get_chat_session(session_id_key: str, system_instruction: str | None = None,
             model_name = current_app.config.get('MODEL_NAME', 'gemini-2.5-flash')
             temperature = current_app.config.get('TEMPERATURE', 0)
             
-            generation_config = genai.GenerationConfig(temperature=temperature)
-            safety_settings = [
-                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-            ]
-            model = genai.GenerativeModel(
-                model_name,
-                generation_config=generation_config,
-                system_instruction=system_instruction, 
-                safety_settings=safety_settings
+            client = get_client()
+            
+            config = types.GenerateContentConfig(
+                temperature=temperature,
+                safety_settings=[
+                    types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_SEXUALLY_EXPLICIT", threshold="BLOCK_NONE"),
+                    types.SafetySetting(category="HARM_CATEGORY_DANGEROUS_CONTENT", threshold="BLOCK_NONE"),
+                ],
+                system_instruction=system_instruction
             )
-            chat_sessions[session_id_key] = model.start_chat(history=[]) 
+            
+            chat = client.chats.create(
+                model=model_name,
+                config=config,
+                history=[]
+            )
+            chat_sessions[session_id_key] = chat
+            
         except Exception as e:
-            logger.error(f"Failed to create GenerativeModel or start chat for session {session_id_key}: {e}")
+            logger.error(f"Failed to create chat session {session_id_key}: {e}")
             traceback.print_exc()
             raise Exception(f"فشل في بدء جلسة الدردشة مع النموذج: {e}")
+            
     return chat_sessions[session_id_key]
 
 def send_text_to_remote_api(text_payload: str, session_id_key: str, formatted_system_prompt: str):
@@ -109,14 +131,25 @@ def extract_text_from_file(file_path: str):
         extraction_prompt = current_app.config.get('EXTRACTION_PROMPT', 
             "Extract the full text from the provided file with high accuracy. Use **Markdown** format to preserve structure.")
             
+        client = get_client()
+        
         # Upload file to AI service
-        sample_file = genai.upload_file(path=file_path, display_name="Contract Document")
+        # Note: google-genai uses client.files.upload
+        file_path_obj = pathlib.Path(file_path)
+        sample_file = client.files.upload(path=file_path_obj, config={'display_name': "Contract Document"})
         logger.info(f"File uploaded to AI service: {sample_file.name}")
         
-        # Send extraction request
+        # Wait for file to be active (if needed, though usually fast for small files)
+        # For PDF extraction, we might need to wait? 
+        # The new SDK handles this usually, but let's be safe if it's large.
+        # But for now, standard generate_content.
+        
         model_name = current_app.config.get('MODEL_NAME', 'gemini-2.5-flash')
-        model = genai.GenerativeModel(model_name)
-        response = model.generate_content([sample_file, extraction_prompt])
+        
+        response = client.models.generate_content(
+            model=model_name,
+            contents=[sample_file, extraction_prompt]
+        )
         
         if response and response.text:
             logger.info(f"Text extraction completed: {len(response.text)} characters")

@@ -21,8 +21,14 @@ class DefaultConfig:
     
     # AI Service Configuration
     GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
+    GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    GEMINI_FILE_SEARCH_API_KEY = os.environ.get("GEMINI_FILE_SEARCH_API_KEY") # Dedicated key for file search
     MODEL_NAME = "gemini-2.5-flash"
     TEMPERATURE = 0
+    
+    # File Search Configuration
+    FILE_SEARCH_STORE_ID = os.environ.get("FILE_SEARCH_STORE_ID")
+    TOP_K_CHUNKS = int(os.environ.get("TOP_K_CHUNKS", "10"))
     
     # Database Configuration
     MONGO_URI = os.environ.get("MONGO_URI")
@@ -42,7 +48,7 @@ class DefaultConfig:
     CLOUDINARY_PDF_PREVIEWS_SUBFOLDER = "pdf_previews"
     
     # External Tools
-    LIBREOFFICE_PATH = "libreoffice"  # System-wide LibreOffice installation
+    LIBREOFFICE_PATH = os.environ.get("LIBREOFFICE_PATH", "libreoffice")  # System-wide LibreOffice installation
     
     # Default Jurisdiction
     DEFAULT_JURISDICTION = "Egypt"
@@ -68,10 +74,10 @@ class DefaultConfig:
         """Load Sharia analysis prompt from file."""
         return self.load_prompt('SYS_PROMPT_SHARIA_ANALYSIS.txt')
     
-    @property
-    def SYS_PROMPT_LEGAL(self):
-        """Load Legal analysis prompt from file."""
-        return self.load_prompt('SYS_PROMPT_LEGAL_ANALYSIS.txt')
+    # @property
+    # def SYS_PROMPT_LEGAL(self):
+    #     """Load Legal analysis prompt from file."""
+    #     return self.load_prompt('SYS_PROMPT_LEGAL_ANALYSIS.txt')
     
     @property
     def INTERACTION_PROMPT_SHARIA(self):
@@ -93,12 +99,22 @@ class DefaultConfig:
         """Load contract generation prompt from file."""
         return self.load_prompt('CONTRACT_GENERATION_PROMPT.txt')
     
-    @property
-    def INTERACTION_PROMPT_LEGAL(self):
-        """Load Legal interaction prompt from file."""
-        return self.load_prompt('INTERACTION_PROMPT_LEGAL.txt')
+    # @property
+    # def INTERACTION_PROMPT_LEGAL(self):
+    #     """Load Legal interaction prompt from file."""
+    #     return self.load_prompt('INTERACTION_PROMPT_LEGAL.txt')
     
+    # @property
+    # def REVIEW_MODIFICATION_PROMPT_LEGAL(self):
+    #     """Load Legal review modification prompt from file."""
+    #     return self.load_prompt('REVIEW_MODIFICATION_PROMPT_LEGAL.txt')
+
     @property
-    def REVIEW_MODIFICATION_PROMPT_LEGAL(self):
-        """Load Legal review modification prompt from file."""
-        return self.load_prompt('REVIEW_MODIFICATION_PROMPT_LEGAL.txt')
+    def EXTRACT_KEY_TERMS_PROMPT(self):
+        """Load extract key terms prompt from file."""
+        return self.load_prompt('EXTRACT_KEY_TERMS_PROMPT.txt')
+
+    @property
+    def FILE_SEARCH_PROMPT(self):
+        """Load file search prompt from file."""
+        return self.load_prompt('FILE_SEARCH_PROMPT.txt')

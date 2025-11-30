@@ -31,6 +31,7 @@ def analyze_contract():
     - analysis_type parameter (sharia, legal)
     - jurisdiction parameter (default: Egypt)
     """
+    
     session_id = str(uuid.uuid4())
     logger.info(f"Starting contract analysis for session: {session_id}")
     
@@ -53,6 +54,11 @@ def analyze_contract():
     else:
         analysis_type = request.form.get('analysis_type', 'sharia')
         jurisdiction = request.form.get('jurisdiction', 'Egypt')
+    
+    # Force Sharia analysis for now (Legal disabled)
+    if analysis_type == 'legal':
+        logger.warning("Legal analysis requested but currently disabled. Defaulting to Sharia.")
+        analysis_type = 'sharia'
     
     logger.info(f"Analysis type: {analysis_type}, Jurisdiction: {jurisdiction}")
     
@@ -109,10 +115,11 @@ def analyze_contract():
                 config = DefaultConfig()
                 
                 # Select appropriate prompt based on analysis type
+                # Select appropriate prompt based on analysis type
                 if analysis_type == "sharia":
                     sys_prompt = config.SYS_PROMPT_SHARIA
-                elif analysis_type == "legal":
-                    sys_prompt = config.SYS_PROMPT_LEGAL 
+                # elif analysis_type == "legal":
+                #     sys_prompt = config.SYS_PROMPT_LEGAL 
                 else:
                     sys_prompt = config.SYS_PROMPT_SHARIA  # Default to Sharia
                 
@@ -222,10 +229,11 @@ def analyze_contract():
                 config = DefaultConfig()
                 
                 # Select appropriate prompt based on analysis type
+                # Select appropriate prompt based on analysis type
                 if analysis_type == "sharia":
                     sys_prompt = config.SYS_PROMPT_SHARIA
-                elif analysis_type == "legal":
-                    sys_prompt = config.SYS_PROMPT_LEGAL 
+                # elif analysis_type == "legal":
+                #     sys_prompt = config.SYS_PROMPT_LEGAL 
                 else:
                     sys_prompt = config.SYS_PROMPT_SHARIA  # Default to Sharia
                 
