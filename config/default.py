@@ -37,13 +37,30 @@ class DefaultConfig:
     TEMP_PROCESSING_FOLDER = os.environ.get("TEMP_PROCESSING_FOLDER", "/tmp/shariaa_temp")
     PDF_PREVIEW_FOLDER = os.environ.get("PDF_PREVIEW_FOLDER", "/tmp/pdf_previews")
     
-    # Load prompts from files
-    EXTRACTION_PROMPT = _load_prompt('EXTRACTION_PROMPT.txt') or "Extract text accurately in Markdown format."
-    SYS_PROMPT = _load_prompt('SYS_PROMPT_SHARIA_ANALYSIS.txt') or "Sharia compliance analyzer"
-    INTERACTION_PROMPT = _load_prompt('INTERACTION_PROMPT_SHARIA.txt') or "Expert consultation prompt"
-    REVIEW_MODIFICATION_PROMPT = _load_prompt('REVIEW_MODIFICATION_PROMPT_SHARIA.txt') or "Review modifications"
-    CONTRACT_REGENERATION_PROMPT = _load_prompt('CONTRACT_REGENERATION_PROMPT.txt') or "Regenerate contract"
-    
-    SYS_PROMPT_SHARIA = SYS_PROMPT
-    INTERACTION_PROMPT_SHARIA = INTERACTION_PROMPT
-    REVIEW_MODIFICATION_PROMPT_SHARIA = REVIEW_MODIFICATION_PROMPT
+    @staticmethod
+    def _load_prompt(filename):
+        """Load prompt from file in prompts/ directory"""
+        try:
+            prompts_dir = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'prompts')
+            filepath = os.path.join(prompts_dir, filename)
+            if os.path.exists(filepath):
+                with open(filepath, 'r', encoding='utf-8') as f:
+                    content = f.read().strip()
+                    return content if content else None
+            return None
+        except Exception as e:
+            import sys
+            print(f"Error loading prompt {filename}: {e}", file=sys.stderr)
+            return None
+
+# Load prompts from files after class definition
+DefaultConfig.EXTRACTION_PROMPT = DefaultConfig._load_prompt('EXTRACTION_PROMPT.txt') or "Extract text accurately in Markdown format."
+DefaultConfig.SYS_PROMPT = DefaultConfig._load_prompt('SYS_PROMPT_SHARIA_ANALYSIS.txt') or "Sharia compliance analyzer"
+DefaultConfig.INTERACTION_PROMPT = DefaultConfig._load_prompt('INTERACTION_PROMPT_SHARIA.txt') or "Expert consultation prompt"
+DefaultConfig.REVIEW_MODIFICATION_PROMPT = DefaultConfig._load_prompt('REVIEW_MODIFICATION_PROMPT_SHARIA.txt') or "Review modifications"
+DefaultConfig.CONTRACT_REGENERATION_PROMPT = DefaultConfig._load_prompt('CONTRACT_REGENERATION_PROMPT.txt') or "Regenerate contract"
+
+# Aliases for backward compatibility
+DefaultConfig.SYS_PROMPT_SHARIA = DefaultConfig.SYS_PROMPT
+DefaultConfig.INTERACTION_PROMPT_SHARIA = DefaultConfig.INTERACTION_PROMPT
+DefaultConfig.REVIEW_MODIFICATION_PROMPT_SHARIA = DefaultConfig.REVIEW_MODIFICATION_PROMPT
