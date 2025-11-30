@@ -43,10 +43,10 @@ def create_app(config_name='default'):
     CORS(app, 
          resources={r"/*": {
              "origins": "*",
-             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-             "allow_headers": ["Content-Type", "Authorization", "Accept"],
-             "expose_headers": ["Content-Type"],
-             "supports_credentials": False,  # Set to False when using origins="*"
+             "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+             "allow_headers": "*",
+             "expose_headers": ["Content-Type", "Content-Disposition", "X-Session-Id"],
+             "supports_credentials": False,
              "max_age": 3600
          }})
     
@@ -76,10 +76,11 @@ def create_app(config_name='default'):
     # Add after_request handler for additional CORS headers
     @app.after_request
     def after_request(response):
-        response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,Accept')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'false')
+        origin = request.headers.get('Origin', '*')
+        response.headers['Access-Control-Allow-Origin'] = origin if origin else '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, Accept, X-Requested-With, X-Session-Id, Cache-Control'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, PUT, POST, DELETE, OPTIONS, PATCH'
+        response.headers['Access-Control-Max-Age'] = '3600'
         return response
     
     return app

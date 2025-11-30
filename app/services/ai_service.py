@@ -16,6 +16,8 @@ logger = logging.getLogger(__name__)
 
 # Global chat sessions storage
 chat_sessions = {}
+# Global client storage to prevent garbage collection
+_clients = {}
 
 def init_ai_service(app):
     """Initialize AI service with configuration."""
@@ -47,7 +49,7 @@ def get_client():
 
 def get_chat_session(session_id_key: str, system_instruction: str | None = None, force_new: bool = False):
     """Get or create a chat session for AI interactions."""
-    global chat_sessions
+    global chat_sessions, _clients
     session_id_key = session_id_key or "default_chat_session_key"
 
     if force_new or session_id_key not in chat_sessions:
@@ -60,6 +62,7 @@ def get_chat_session(session_id_key: str, system_instruction: str | None = None,
             temperature = current_app.config.get('TEMPERATURE', 0)
             
             client = get_client()
+            _clients[session_id_key] = client
             
             config = types.GenerateContentConfig(
                 temperature=temperature,

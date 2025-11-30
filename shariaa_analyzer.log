@@ -286,3 +286,125 @@
  * Running on http://172.31.76.194:5000
 2025-11-30 12:37:29,891 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
 2025-11-30 12:37:30,825 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:37:30] "GET / HTTP/1.1" 200 -
+2025-11-30 12:43:56,654 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 12:43:58,648 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 12:43:58,693 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 12:43:59,390 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 12:43:59,442 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.76.194:5000
+2025-11-30 12:43:59,442 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 12:44:00,141 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:44:00] "GET / HTTP/1.1" 200 -
+2025-11-30 12:44:00,336 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:44:00] "GET / HTTP/1.1" 200 -
+2025-11-30 12:44:06,390 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:44:06] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-30 12:44:13,387 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:44:13] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 12:44:20,510 - app.routes.analysis_upload - INFO - Starting contract analysis for session: 39b2f524-d97e-49c8-9050-ed84fcc602a7
+2025-11-30 12:44:20,511 - app.routes.analysis_upload - INFO - Analysis type: sharia, Jurisdiction: Egypt
+2025-11-30 12:44:20,612 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:44:20] "[31m[1mPOST /analyze HTTP/1.1[0m" 400 -
+2025-11-30 12:44:35,815 - app.routes.analysis_upload - INFO - Starting contract analysis for session: ac12159f-6b13-4370-a08f-36c4fe192f78
+2025-11-30 12:44:35,816 - app.routes.analysis_upload - INFO - Analysis type: sharia, Jurisdiction: Egypt
+2025-11-30 12:44:35,817 - app.routes.analysis_upload - INFO - Processing text input: 19 characters
+2025-11-30 12:44:35,817 - app.routes.analysis_upload - ERROR - Error during analysis: 'str' object has no attribute 'element'
+2025-11-30 12:44:35,819 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:44:35] "[35m[1mPOST /analyze HTTP/1.1[0m" 500 -
+2025-11-30 12:45:16,752 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 12:45:18,704 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 12:45:18,744 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 12:45:19,474 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 12:45:19,546 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.76.194:5000
+2025-11-30 12:45:19,546 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 12:45:19,899 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:45:19] "GET / HTTP/1.1" 200 -
+2025-11-30 12:45:25,430 - app.routes.analysis_upload - INFO - Starting contract analysis for session: 159ebfec-0f87-4535-876e-c04967a5e294
+2025-11-30 12:45:25,431 - app.routes.analysis_upload - INFO - Analysis type: sharia, Jurisdiction: Egypt
+2025-11-30 12:45:25,527 - app.routes.analysis_upload - INFO - Processing text input: 28 characters
+2025-11-30 12:45:25,869 - app.routes.analysis_upload - INFO - Detected contract language: ar, output_language: العربية
+2025-11-30 12:45:26,065 - app.routes.analysis_upload - INFO - Starting file search for session: 159ebfec-0f87-4535-876e-c04967a5e294
+2025-11-30 12:45:26,065 - google_genai._api_client - WARNING - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2025-11-30 12:45:26,095 - app.services.file_search - INFO - FileSearchService initialized using API Key: ****tmCM
+2025-11-30 12:45:26,095 - app.services.file_search - INFO - Model: gemini-2.5-flash
+2025-11-30 12:45:26,096 - app.services.file_search - INFO - ============================================================
+2025-11-30 12:45:26,096 - app.services.file_search - INFO - HYBRID FILE SEARCH PROCESS (Two-Step + Sensitive Clauses)
+2025-11-30 12:45:26,096 - app.services.file_search - INFO - ============================================================
+2025-11-30 12:45:26,096 - app.services.file_search - INFO - Using API Key: ****tmCM
+2025-11-30 12:45:26,096 - app.services.file_search - INFO - STEP 1/2: Extracting key terms from contract...
+2025-11-30 12:45:26,096 - app.services.file_search - INFO - Contract length: 42 characters
+2025-11-30 12:45:26,096 - app.services.file_search - INFO - Using API Key: ****tmCM
+2025-11-30 12:45:26,096 - app.services.file_search - ERROR - Term extraction failed: 'property' object has no attribute 'format'
+2025-11-30 12:45:26,097 - app.services.file_search - WARNING - No terms extracted, falling back to full contract search
+2025-11-30 12:45:26,097 - app.services.file_search - INFO - PHASE 1/2: General Search for all extracted clauses...
+2025-11-30 12:45:26,097 - app.services.file_search - INFO - Using top_k=10 for comprehensive coverage
+2025-11-30 12:45:26,097 - app.services.file_search - ERROR - Search failed: 'property' object has no attribute 'format'
+2025-11-30 12:45:26,097 - app.routes.analysis_upload - ERROR - File search failed: 'property' object has no attribute 'format'
+2025-11-30 12:45:26,098 - app.routes.analysis_upload - INFO - Formatted system prompt length: 4235 characters
+2025-11-30 12:45:26,098 - app.services.ai_service - INFO - Sending text to LLM for session: 159ebfec-0f87-4535-876e-c04967a5e294_analysis, payload length: 42
+2025-11-30 12:45:26,098 - app.services.ai_service - INFO - Creating new chat session for key: 159ebfec-0f87-4535-876e-c04967a5e294_analysis
+2025-11-30 12:45:26,098 - app.services.ai_service - INFO - Creating GenAI client with API Key: ****FYNQ
+2025-11-30 12:45:26,098 - google_genai._api_client - WARNING - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2025-11-30 12:45:26,121 - app.services.ai_service - INFO - Sending request to AI API (attempt 1/3)
+2025-11-30 12:45:26,122 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-11-30 12:45:26,127 - app.services.ai_service - ERROR - AI API request failed on attempt 1: Cannot send a request, as the client has been closed.
+2025-11-30 12:45:27,127 - app.services.ai_service - INFO - Sending request to AI API (attempt 2/3)
+2025-11-30 12:45:27,127 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-11-30 12:45:27,129 - app.services.ai_service - ERROR - AI API request failed on attempt 2: Cannot send a request, as the client has been closed.
+2025-11-30 12:45:29,130 - app.services.ai_service - INFO - Sending request to AI API (attempt 3/3)
+2025-11-30 12:45:29,132 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-11-30 12:45:29,135 - app.services.ai_service - ERROR - AI API request failed on attempt 3: Cannot send a request, as the client has been closed.
+2025-11-30 12:45:29,136 - app.services.ai_service - ERROR - Critical error in AI API communication: Cannot send a request, as the client has been closed.
+2025-11-30 12:45:29,140 - app.routes.analysis_upload - WARNING - No valid analysis result from AI service: ERROR_API_COMMUNICATION: Cannot send a request, as the client has been closed.
+2025-11-30 12:45:29,334 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:45:29] "POST /analyze HTTP/1.1" 200 -
+2025-11-30 12:46:54,446 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 12:46:56,538 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 12:46:56,578 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 12:46:57,340 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 12:46:57,378 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.76.194:5000
+2025-11-30 12:46:57,378 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 12:46:57,743 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:46:57] "GET / HTTP/1.1" 200 -
+2025-11-30 12:47:04,679 - app.routes.analysis_upload - INFO - Starting contract analysis for session: 0b07838b-6f65-4b67-a9d4-ea7df220f55c
+2025-11-30 12:47:04,681 - app.routes.analysis_upload - INFO - Analysis type: sharia, Jurisdiction: Egypt
+2025-11-30 12:47:04,803 - app.routes.analysis_upload - INFO - Processing text input: 41 characters
+2025-11-30 12:47:05,272 - app.routes.analysis_upload - INFO - Detected contract language: ar, output_language: العربية
+2025-11-30 12:47:05,474 - app.routes.analysis_upload - INFO - Starting file search for session: 0b07838b-6f65-4b67-a9d4-ea7df220f55c
+2025-11-30 12:47:05,476 - google_genai._api_client - WARNING - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2025-11-30 12:47:05,556 - app.services.file_search - INFO - FileSearchService initialized using API Key: ****tmCM
+2025-11-30 12:47:05,559 - app.services.file_search - INFO - Model: gemini-2.5-flash
+2025-11-30 12:47:05,564 - app.services.file_search - INFO - ============================================================
+2025-11-30 12:47:05,568 - app.services.file_search - INFO - HYBRID FILE SEARCH PROCESS (Two-Step + Sensitive Clauses)
+2025-11-30 12:47:05,572 - app.services.file_search - INFO - ============================================================
+2025-11-30 12:47:05,576 - app.services.file_search - INFO - Using API Key: ****tmCM
+2025-11-30 12:47:05,580 - app.services.file_search - INFO - STEP 1/2: Extracting key terms from contract...
+2025-11-30 12:47:05,584 - app.services.file_search - INFO - Contract length: 55 characters
+2025-11-30 12:47:05,588 - app.services.file_search - INFO - Using API Key: ****tmCM
+2025-11-30 12:47:05,592 - app.services.file_search - ERROR - Prompt formatting error: '\n    "term_id"'
+2025-11-30 12:47:05,598 - app.services.file_search - INFO - Calling Gemini for term extraction...
+2025-11-30 12:47:05,628 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-11-30 12:47:10,031 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2025-11-30 12:47:10,037 - app.services.file_search - ERROR - Could not find JSON array in response
+2025-11-30 12:47:10,039 - app.services.file_search - WARNING - No terms extracted, falling back to full contract search
+2025-11-30 12:47:10,039 - app.services.file_search - INFO - PHASE 1/2: General Search for all extracted clauses...
+2025-11-30 12:47:10,039 - app.services.file_search - INFO - Using top_k=10 for comprehensive coverage
+2025-11-30 12:47:10,039 - app.services.file_search - INFO - SEARCH: Querying Gemini File Search (Phase 1)...
+2025-11-30 12:47:10,039 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-11-30 12:47:11,617 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 403 Forbidden"
+2025-11-30 12:47:11,619 - app.services.file_search - ERROR - Search failed: 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'You do not have permission to access the file search store aaoifi-reference-store-vwvmgtb64hqq or it may not exist.', 'status': 'PERMISSION_DENIED'}}
+2025-11-30 12:47:11,623 - app.routes.analysis_upload - ERROR - File search failed: 403 PERMISSION_DENIED. {'error': {'code': 403, 'message': 'You do not have permission to access the file search store aaoifi-reference-store-vwvmgtb64hqq or it may not exist.', 'status': 'PERMISSION_DENIED'}}
+2025-11-30 12:47:11,623 - app.routes.analysis_upload - INFO - Formatted system prompt length: 4235 characters
+2025-11-30 12:47:11,623 - app.services.ai_service - INFO - Sending text to LLM for session: 0b07838b-6f65-4b67-a9d4-ea7df220f55c_analysis, payload length: 55
+2025-11-30 12:47:11,623 - app.services.ai_service - INFO - Creating new chat session for key: 0b07838b-6f65-4b67-a9d4-ea7df220f55c_analysis
+2025-11-30 12:47:11,624 - app.services.ai_service - INFO - Creating GenAI client with API Key: ****FYNQ
+2025-11-30 12:47:11,624 - google_genai._api_client - WARNING - Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+2025-11-30 12:47:11,644 - app.services.ai_service - INFO - Sending request to AI API (attempt 1/3)
+2025-11-30 12:47:11,646 - google_genai.models - INFO - AFC is enabled with max remote calls: 10.
+2025-11-30 12:47:14,715 - httpx - INFO - HTTP Request: POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent "HTTP/1.1 200 OK"
+2025-11-30 12:47:14,721 - app.services.ai_service - INFO - Received response from AI API: 2 characters
+2025-11-30 12:47:14,722 - app.routes.analysis_upload - INFO - Raw analysis result length: 2 characters
+2025-11-30 12:47:14,722 - app.routes.analysis_upload - INFO - Clean result starts with: []
+2025-11-30 12:47:14,722 - app.routes.analysis_upload - INFO - Parsed JSON type: list
+2025-11-30 12:47:14,722 - app.routes.analysis_upload - INFO - Analysis data is a list with 0 items
+2025-11-30 12:47:14,722 - app.routes.analysis_upload - WARNING - No terms found in analysis result
+2025-11-30 12:47:14,926 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:47:14] "POST /analyze HTTP/1.1" 200 -

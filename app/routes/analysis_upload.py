@@ -299,8 +299,13 @@ def analyze_contract():
             text_content = request.json['text']
             logger.info(f"Processing text input: {len(text_content)} characters")
             
-            # Build structured text for analysis
-            structured_text = build_structured_text_for_analysis(text_content)
+            # For text input, create simple structured format with paragraph IDs
+            paragraphs = text_content.strip().split('\n')
+            structured_parts = []
+            for idx, para in enumerate(paragraphs):
+                if para.strip():
+                    structured_parts.append(f"[[ID:para_{idx}]]\n{para.strip()}")
+            structured_text = "\n\n".join(structured_parts) if structured_parts else text_content
             
             # Detect contract language for output
             from langdetect import detect
