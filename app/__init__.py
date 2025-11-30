@@ -69,11 +69,9 @@ def create_app(config_name='default'):
 
 
 def configure_logging(app):
-    """Configure application logging."""
-    log_level = logging.DEBUG if app.debug else logging.INFO
-    
+    """Configure application logging with clean output."""
     logging.basicConfig(
-        level=log_level,
+        level=logging.INFO,
         format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
         datefmt='%Y-%m-%d %H:%M:%S',
         handlers=[
@@ -82,11 +80,23 @@ def configure_logging(app):
         force=True
     )
     
+    noisy_loggers = [
+        'pymongo', 'pymongo.topology', 'pymongo.connection', 
+        'pymongo.serverSelection', 'pymongo.command',
+        'google', 'google.auth', 'google.genai',
+        'urllib3', 'httpcore', 'httpx',
+        'werkzeug'
+    ]
+    for logger_name in noisy_loggers:
+        logging.getLogger(logger_name).setLevel(logging.WARNING)
+    
+    if app.debug:
+        logging.getLogger('app').setLevel(logging.DEBUG)
+    
     logging.info("="*60)
     logging.info("SHARIAA CONTRACT ANALYZER - STARTUP")
     logging.info("="*60)
     logging.info(f"Debug Mode: {app.debug}")
-    logging.info(f"Log Level: {'DEBUG' if app.debug else 'INFO'}")
 
 
 def register_blueprints(app):
