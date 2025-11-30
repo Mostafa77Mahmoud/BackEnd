@@ -12,3 +12,17 @@ requests
 werkzeug
 pytest
 python-dotenv
+cloudinary
+dnspython
+Flask
+Flask-CORS
+google-genai
+gunicorn
+langdetect
+pymongo[srv]
+pytest
+python-docx
+python-dotenv
+requests
+unidecode
+werkzeug

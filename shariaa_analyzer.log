@@ -233,3 +233,16 @@
 2025-11-30 14:01:13,425 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
 2025-11-30 14:01:16,932 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:01:16] "OPTIONS /analyze HTTP/1.1" 200 -
 2025-11-30 14:01:18,943 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:01:18] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 12:12:00,503 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 12:12:02,560 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 12:12:02,601 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 12:12:03,261 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 12:12:03,346 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.76.194:5000
+2025-11-30 12:12:03,346 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 12:12:03,971 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:12:03] "GET / HTTP/1.1" 200 -
+2025-11-30 12:12:04,255 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:12:04] "GET / HTTP/1.1" 200 -
+2025-11-30 12:12:09,860 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:12:09] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-30 12:12:19,336 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:12:19] "GET / HTTP/1.1" 200 -
