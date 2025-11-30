@@ -63,6 +63,8 @@ DefaultConfig.SYS_PROMPT = DefaultConfig._load_prompt('SYS_PROMPT_SHARIA_ANALYSI
 DefaultConfig.INTERACTION_PROMPT = DefaultConfig._load_prompt('INTERACTION_PROMPT_SHARIA.txt') or "Expert consultation prompt"
 DefaultConfig.REVIEW_MODIFICATION_PROMPT = DefaultConfig._load_prompt('REVIEW_MODIFICATION_PROMPT_SHARIA.txt') or "Review modifications"
 DefaultConfig.CONTRACT_REGENERATION_PROMPT = DefaultConfig._load_prompt('CONTRACT_REGENERATION_PROMPT.txt') or "Regenerate contract"
+DefaultConfig.EXTRACT_KEY_TERMS_PROMPT = DefaultConfig._load_prompt('EXTRACT_KEY_TERMS_PROMPT.txt') or "Extract key terms from contract"
+DefaultConfig.FILE_SEARCH_PROMPT = DefaultConfig._load_prompt('FILE_SEARCH_PROMPT.txt') or "Search AAOIFI standards"
 
 # Aliases for backward compatibility
 DefaultConfig.SYS_PROMPT_SHARIA = DefaultConfig.SYS_PROMPT

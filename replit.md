@@ -114,6 +114,12 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### November 30, 2025 - Missing Prompts Fix
+- **Fixed**: Added missing `EXTRACT_KEY_TERMS_PROMPT` and `FILE_SEARCH_PROMPT` to config/default.py
+  - Both prompts were in `prompts/` directory but not being loaded
+  - File search now works properly to retrieve AAOIFI standards context
+  - Application gracefully continues analysis even if file search fails
+
 ### November 30, 2025 - Code Cleanup and Verification
 - **Logging Enhancement**: Suppressed noisy third-party logs (pymongo, google, urllib3, werkzeug) - console now shows clean, readable output
 - **Full Migration Verification**: Architect confirmed 100% parity between old and new code structure
