@@ -174,21 +174,40 @@ def analyze_contract():
                         import json
                         import re
                         try:
-                            # Clean up the response - extract JSON from possible markdown
+                            # Clean up the response - extract JSON from possible markdown or extra text
                             clean_result = analysis_result.strip()
-                            if clean_result.startswith("```"):
+                            logger.info(f"Raw analysis result length: {len(clean_result)} characters")
+                            
+                            # Try to extract JSON from markdown code blocks
+                            if "```" in clean_result:
                                 json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', clean_result)
                                 if json_match:
                                     clean_result = json_match.group(1).strip()
+                                    logger.info(f"Extracted JSON from markdown block")
                             
+                            # Try to find JSON array if response has extra text
+                            if not clean_result.startswith('[') and not clean_result.startswith('{'):
+                                # Look for JSON array in the response
+                                array_match = re.search(r'(\[[\s\S]*\])', clean_result)
+                                if array_match:
+                                    clean_result = array_match.group(1).strip()
+                                    logger.info(f"Extracted JSON array from text")
+                            
+                            logger.info(f"Clean result starts with: {clean_result[:100] if len(clean_result) > 100 else clean_result}")
                             analysis_data = json.loads(clean_result)
+                            logger.info(f"Parsed JSON type: {type(analysis_data).__name__}")
                             
                             # Handle both list format and dict with "terms" key
                             terms_list = []
                             if isinstance(analysis_data, list):
                                 terms_list = analysis_data
-                            elif isinstance(analysis_data, dict) and "terms" in analysis_data:
-                                terms_list = analysis_data["terms"]
+                                logger.info(f"Analysis data is a list with {len(terms_list)} items")
+                            elif isinstance(analysis_data, dict):
+                                if "terms" in analysis_data:
+                                    terms_list = analysis_data["terms"]
+                                    logger.info(f"Analysis data is a dict with 'terms' key, {len(terms_list)} items")
+                                else:
+                                    logger.warning(f"Analysis data is dict but no 'terms' key. Keys: {list(analysis_data.keys())}")
                             
                             if terms_list:
                                 logger.info(f"Parsed {len(terms_list)} terms from analysis result")
@@ -362,21 +381,40 @@ def analyze_contract():
                         import json
                         import re
                         try:
-                            # Clean up the response - extract JSON from possible markdown
+                            # Clean up the response - extract JSON from possible markdown or extra text
                             clean_result = analysis_result.strip()
-                            if clean_result.startswith("```"):
+                            logger.info(f"Raw analysis result length: {len(clean_result)} characters")
+                            
+                            # Try to extract JSON from markdown code blocks
+                            if "```" in clean_result:
                                 json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', clean_result)
                                 if json_match:
                                     clean_result = json_match.group(1).strip()
+                                    logger.info(f"Extracted JSON from markdown block")
                             
+                            # Try to find JSON array if response has extra text
+                            if not clean_result.startswith('[') and not clean_result.startswith('{'):
+                                # Look for JSON array in the response
+                                array_match = re.search(r'(\[[\s\S]*\])', clean_result)
+                                if array_match:
+                                    clean_result = array_match.group(1).strip()
+                                    logger.info(f"Extracted JSON array from text")
+                            
+                            logger.info(f"Clean result starts with: {clean_result[:100] if len(clean_result) > 100 else clean_result}")
                             analysis_data = json.loads(clean_result)
+                            logger.info(f"Parsed JSON type: {type(analysis_data).__name__}")
                             
                             # Handle both list format and dict with "terms" key
                             terms_list = []
                             if isinstance(analysis_data, list):
                                 terms_list = analysis_data
-                            elif isinstance(analysis_data, dict) and "terms" in analysis_data:
-                                terms_list = analysis_data["terms"]
+                                logger.info(f"Analysis data is a list with {len(terms_list)} items")
+                            elif isinstance(analysis_data, dict):
+                                if "terms" in analysis_data:
+                                    terms_list = analysis_data["terms"]
+                                    logger.info(f"Analysis data is a dict with 'terms' key, {len(terms_list)} items")
+                                else:
+                                    logger.warning(f"Analysis data is dict but no 'terms' key. Keys: {list(analysis_data.keys())}")
                             
                             if terms_list:
                                 logger.info(f"Parsed {len(terms_list)} terms from analysis result")

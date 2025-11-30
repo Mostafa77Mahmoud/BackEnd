@@ -246,3 +246,23 @@
 2025-11-30 12:12:04,255 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:12:04] "GET / HTTP/1.1" 200 -
 2025-11-30 12:12:09,860 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:12:09] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
 2025-11-30 12:12:19,336 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:12:19] "GET / HTTP/1.1" 200 -
+2025-11-30 12:18:03,971 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 12:18:05,916 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 12:18:05,961 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 12:18:06,613 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 12:18:06,644 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.76.194:5000
+2025-11-30 12:18:06,645 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 12:18:08,467 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:18:08] "GET / HTTP/1.1" 200 -
+2025-11-30 12:19:29,795 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 12:19:31,773 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 12:19:31,799 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 12:19:32,537 - app.services.ai_service - INFO - Google GenAI service initialized (client will be created per request)
+2025-11-30 12:19:32,575 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.76.194:5000
+2025-11-30 12:19:32,575 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 12:19:32,980 - werkzeug - INFO - 172.31.76.194 - - [30/Nov/2025 12:19:32] "GET / HTTP/1.1" 200 -
