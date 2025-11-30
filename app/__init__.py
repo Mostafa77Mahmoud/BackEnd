@@ -106,6 +106,7 @@ def register_blueprints(app):
     from app.routes.interaction import interaction_bp
     from app.routes.admin import admin_bp
     from app.routes.file_search import file_search_bp
+    from app.routes.api_stats import api_bp
     
     # Register without /api prefix to match frontend expectations
     app.register_blueprint(analysis_bp)
@@ -113,3 +114,4 @@ def register_blueprints(app):
     app.register_blueprint(interaction_bp)
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(file_search_bp)
+    app.register_blueprint(api_bp)

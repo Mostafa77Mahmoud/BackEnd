@@ -1,509 +1,314 @@
 """
 Analysis Upload Routes
 
-Contract upload and main analysis entry point.
+File upload and analysis endpoints - matches old api_server.py format.
 """
 
 import os
+import re
 import uuid
 import json
 import datetime
+import tempfile
+import traceback
 import logging
-from flask import Blueprint, request, jsonify
+from flask import request, jsonify, current_app
+from docx import Document as DocxDocument
+from langdetect import detect
+from langdetect.lang_detect_exception import LangDetectException
 
-# Import services
+from app.routes import analysis_bp
 from app.services.database import get_contracts_collection, get_terms_collection
+from app.services.document_processor import build_structured_text_for_analysis
+from app.services.ai_service import send_text_to_remote_api, extract_text_from_file as ai_extract_text
+from app.services.cloudinary_service import upload_to_cloudinary_helper, CLOUDINARY_AVAILABLE
+from app.utils.file_helpers import ensure_dir, clean_filename, download_file_from_url
+from app.utils.text_processing import clean_model_response, generate_safe_public_id
 from app.utils.analysis_helpers import TEMP_PROCESSING_FOLDER
 
 logger = logging.getLogger(__name__)
 
-# Get blueprint from __init__.py
-from . import analysis_bp
+try:
+    import cloudinary
+    import cloudinary.uploader
+except ImportError:
+    cloudinary = None
+    logger.warning("Cloudinary not available")
 
 
 @analysis_bp.route('/analyze', methods=['POST'])
-def analyze_contract():
-    """
-    Analyze contract for Sharia compliance.
-    
-    Enhanced to support:
-    - File uploads or text input
-    - analysis_type parameter (sharia, legal)
-    - jurisdiction parameter (default: Egypt)
-    """
-    
-    session_id = str(uuid.uuid4())
-    logger.info(f"Starting contract analysis for session: {session_id}")
-    
-    # Get collections
+def analyze_file():
+    """Upload and analyze a contract file - matches old api_server.py format exactly."""
+    session_id_local = str(uuid.uuid4())
+    logger.info(f"Starting file analysis for session: {session_id_local}")
+
     contracts_collection = get_contracts_collection()
     terms_collection = get_terms_collection()
     
     if contracts_collection is None or terms_collection is None:
         logger.error("Database service unavailable")
         return jsonify({"error": "Database service unavailable."}), 503
+
+    if "file" not in request.files:
+        logger.warning("No file sent in request")
+        return jsonify({"error": "No file sent."}), 400
+
+    uploaded_file_storage = request.files["file"]
+    if not uploaded_file_storage or not uploaded_file_storage.filename:
+        logger.warning("Invalid file in request")
+        return jsonify({"error": "Invalid file."}), 400
+
+    original_filename = clean_filename(uploaded_file_storage.filename)
+    logger.info(f"Processing file: {original_filename} for session: {session_id_local}")
+
+    # Cloudinary folder structure
+    CLOUDINARY_BASE_FOLDER = current_app.config.get('CLOUDINARY_BASE_FOLDER', 'shariaa_analyzer_uploads')
+    CLOUDINARY_ORIGINAL_UPLOADS_SUBFOLDER = current_app.config.get('CLOUDINARY_ORIGINAL_UPLOADS_SUBFOLDER', 'original_contracts')
+    CLOUDINARY_ANALYSIS_RESULTS_SUBFOLDER = current_app.config.get('CLOUDINARY_ANALYSIS_RESULTS_SUBFOLDER', 'analysis_results_json')
     
-    # Get analysis parameters from form or JSON data
-    analysis_type = 'sharia'
-    jurisdiction = 'Egypt'
-    
-    if request.is_json and request.get_json():
-        json_data = request.get_json()
-        analysis_type = json_data.get('analysis_type', 'sharia')
-        jurisdiction = json_data.get('jurisdiction', 'Egypt')
-    else:
-        analysis_type = request.form.get('analysis_type', 'sharia')
-        jurisdiction = request.form.get('jurisdiction', 'Egypt')
-    
-    # Force Sharia analysis for now (Legal disabled)
-    if analysis_type == 'legal':
-        logger.warning("Legal analysis requested but currently disabled. Defaulting to Sharia.")
-        analysis_type = 'sharia'
-    
-    logger.info(f"Analysis type: {analysis_type}, Jurisdiction: {jurisdiction}")
-    
+    original_upload_cloudinary_folder = f"{CLOUDINARY_BASE_FOLDER}/{session_id_local}/{CLOUDINARY_ORIGINAL_UPLOADS_SUBFOLDER}"
+    analysis_results_cloudinary_folder = f"{CLOUDINARY_BASE_FOLDER}/{session_id_local}/{CLOUDINARY_ANALYSIS_RESULTS_SUBFOLDER}"
+
+    original_cloudinary_info = None
+    analysis_results_cloudinary_info = None
+    temp_processing_file_path = None
+    temp_analysis_results_path = None
+
     try:
-        # Import services
-        from app.services.document_processor import extract_text_from_file, build_structured_text_for_analysis
-        from app.services.ai_service import send_text_to_remote_api
-        from app.services.cloudinary_service import upload_to_cloudinary_helper
-        from app.utils.file_helpers import clean_filename, download_file_from_url, ensure_dir
-        from config.default import DefaultConfig
-        
-        # Handle file upload or text input
-        if 'file' in request.files:
-            uploaded_file = request.files['file']
-            if not uploaded_file or not uploaded_file.filename:
-                return jsonify({"error": "Invalid file."}), 400
-            
-            original_filename = clean_filename(uploaded_file.filename)
-            logger.info(f"Processing uploaded file: {original_filename}")
-            
-            # Save uploaded file temporarily
-            temp_file_path = os.path.join(TEMP_PROCESSING_FOLDER, f"{session_id}_{original_filename}")
-            uploaded_file.save(temp_file_path)
-            
-            # Extract text from file
-            extracted_text = extract_text_from_file(temp_file_path)
-            if not extracted_text:
-                return jsonify({"error": "Could not extract text from file."}), 400
-            
-            # Upload to Cloudinary
-            cloudinary_folder = f"shariaa_analyzer/{session_id}/original_uploads"
-            cloudinary_result = upload_to_cloudinary_helper(temp_file_path, cloudinary_folder)
-            
-            # Build structured text for analysis
-            structured_text = build_structured_text_for_analysis(extracted_text)
-            
-            # Detect contract language for output
-            from langdetect import detect
-            try:
-                detected_lang = detect(extracted_text[:1000])
-                output_language = "العربية" if detected_lang == "ar" else "English"
-                logger.info(f"Detected contract language: {detected_lang}, output_language: {output_language}")
-            except:
-                output_language = "العربية"
-                logger.info(f"Language detection failed, defaulting to Arabic")
-            
-            # Save session to database first
-            session_doc = {
-                "_id": session_id,
-                "original_filename": original_filename,
-                "analysis_type": analysis_type,
-                "jurisdiction": jurisdiction,
-                "original_contract_plain": extracted_text,
-                "original_contract_markdown": structured_text,
-                "created_at": datetime.datetime.now(),
-                "status": "processing",
-                "cloudinary_info": cloudinary_result if cloudinary_result else None
+        file_base, _ = os.path.splitext(original_filename)
+
+        # Upload original file to Cloudinary
+        if CLOUDINARY_AVAILABLE and cloudinary:
+            safe_public_id = generate_safe_public_id(file_base, "original")
+            original_upload_result = cloudinary.uploader.upload(
+                uploaded_file_storage,
+                folder=original_upload_cloudinary_folder,
+                public_id=safe_public_id,
+                resource_type="auto",
+                overwrite=True
+            )
+
+            if not original_upload_result or not original_upload_result.get("secure_url"):
+                logger.error("Cloudinary upload failed for original file")
+                raise Exception("Cloudinary upload failed for original file.")
+
+            original_cloudinary_info = {
+                "url": original_upload_result.get("secure_url"),
+                "public_id": original_upload_result.get("public_id"),
+                "format": original_upload_result.get("format"),
+                "user_facing_filename": original_filename
             }
-            contracts_collection.insert_one(session_doc)
-            
-            # Perform actual analysis using AI service with file_search integration
-            try:
-                from config.default import DefaultConfig
-                from app.services.file_search import FileSearchService
-                config = DefaultConfig()
+            logger.info(f"Original file uploaded to Cloudinary: {original_cloudinary_info['url']}")
+
+            # Download for processing
+            temp_processing_file_path = download_file_from_url(
+                original_cloudinary_info["url"], 
+                original_filename, 
+                TEMP_PROCESSING_FOLDER
+            )
+            if not temp_processing_file_path:
+                logger.error("Failed to download original file from Cloudinary for processing")
+                raise Exception("Failed to download original file from Cloudinary for processing.")
                 
-                # Step 1: Use file_search to get relevant AAOIFI context
-                aaoifi_context = ""
-                try:
-                    logger.info(f"Starting file search for session: {session_id}")
-                    file_search_service = FileSearchService()
-                    chunks, extracted_terms = file_search_service.search_chunks(structured_text)
-                    
-                    if chunks:
-                        logger.info(f"File search returned {len(chunks)} relevant AAOIFI chunks")
-                        aaoifi_chunks_text = []
-                        for chunk in chunks:
-                            chunk_text = chunk.get("chunk_text", "")
-                            if chunk_text:
-                                aaoifi_chunks_text.append(chunk_text)
-                        aaoifi_context = "\n\n---\n\n".join(aaoifi_chunks_text)
-                        logger.info(f"AAOIFI context length: {len(aaoifi_context)} characters")
-                    else:
-                        logger.warning("No AAOIFI chunks found from file search")
-                        aaoifi_context = "لا توجد مراجع AAOIFI متاحة حالياً"
-                except Exception as fs_error:
-                    logger.error(f"File search failed: {str(fs_error)}")
-                    aaoifi_context = "لا توجد مراجع AAOIFI متاحة حالياً"
-                
-                # Step 2: Select and format the system prompt
-                if analysis_type == "sharia":
-                    sys_prompt_template = config.SYS_PROMPT_SHARIA
-                else:
-                    sys_prompt_template = config.SYS_PROMPT_SHARIA  # Default to Sharia
-                
-                if sys_prompt_template and sys_prompt_template.startswith("ERROR:"):
-                    logger.error(f"Failed to load system prompt: {sys_prompt_template}")
-                    sys_prompt_template = ""
-                
-                if sys_prompt_template:
-                    # Format the prompt with output_language and aaoifi_context
-                    sys_prompt = sys_prompt_template.format(
-                        output_language=output_language,
-                        aaoifi_context=aaoifi_context
-                    )
-                    logger.info(f"Formatted system prompt length: {len(sys_prompt)} characters")
-                    
-                    # Send text for analysis
-                    analysis_result = send_text_to_remote_api(structured_text, session_id_key=f"{session_id}_analysis", formatted_system_prompt=sys_prompt)
-                    
-                    if analysis_result and not analysis_result.startswith("ERROR"):
-                        # Parse and store analysis results
-                        import json
-                        import re
-                        try:
-                            # Clean up the response - extract JSON from possible markdown or extra text
-                            clean_result = analysis_result.strip()
-                            logger.info(f"Raw analysis result length: {len(clean_result)} characters")
-                            
-                            # Try to extract JSON from markdown code blocks
-                            if "```" in clean_result:
-                                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', clean_result)
-                                if json_match:
-                                    clean_result = json_match.group(1).strip()
-                                    logger.info(f"Extracted JSON from markdown block")
-                            
-                            # Try to find JSON array if response has extra text
-                            if not clean_result.startswith('[') and not clean_result.startswith('{'):
-                                # Look for JSON array in the response
-                                array_match = re.search(r'(\[[\s\S]*\])', clean_result)
-                                if array_match:
-                                    clean_result = array_match.group(1).strip()
-                                    logger.info(f"Extracted JSON array from text")
-                            
-                            logger.info(f"Clean result starts with: {clean_result[:100] if len(clean_result) > 100 else clean_result}")
-                            analysis_data = json.loads(clean_result)
-                            logger.info(f"Parsed JSON type: {type(analysis_data).__name__}")
-                            
-                            # Handle both list format and dict with "terms" key
-                            terms_list = []
-                            if isinstance(analysis_data, list):
-                                terms_list = analysis_data
-                                logger.info(f"Analysis data is a list with {len(terms_list)} items")
-                            elif isinstance(analysis_data, dict):
-                                if "terms" in analysis_data:
-                                    terms_list = analysis_data["terms"]
-                                    logger.info(f"Analysis data is a dict with 'terms' key, {len(terms_list)} items")
-                                else:
-                                    logger.warning(f"Analysis data is dict but no 'terms' key. Keys: {list(analysis_data.keys())}")
-                            
-                            if terms_list:
-                                logger.info(f"Parsed {len(terms_list)} terms from analysis result")
-                                # Store individual terms
-                                for term_data in terms_list:
-                                    term_doc = {
-                                        "session_id": session_id,
-                                        "term_id": term_data.get("term_id"),
-                                        "term_text": term_data.get("term_text"),
-                                        "is_valid_sharia": term_data.get("is_valid_sharia", False),
-                                        "sharia_issue": term_data.get("sharia_issue"),
-                                        "modified_term": term_data.get("modified_term"),
-                                        "reference_number": term_data.get("reference_number"),
-                                        "aaoifi_evidence": term_data.get("aaoifi_evidence"),
-                                        "analyzed_at": datetime.datetime.now()
-                                    }
-                                    terms_collection.insert_one(term_doc)
-                                
-                                # Update session status
-                                contracts_collection.update_one(
-                                    {"_id": session_id},
-                                    {"$set": {
-                                        "status": "completed",
-                                        "analysis_result": {"terms": terms_list},
-                                        "terms_count": len(terms_list),
-                                        "completed_at": datetime.datetime.now()
-                                    }}
-                                )
-                                logger.info(f"Analysis completed successfully with {len(terms_list)} terms for session: {session_id}")
-                            else:
-                                logger.warning("No terms found in analysis result")
-                                contracts_collection.update_one(
-                                    {"_id": session_id},
-                                    {"$set": {
-                                        "status": "completed",
-                                        "analysis_result": {"raw_response": analysis_result},
-                                        "completed_at": datetime.datetime.now()
-                                    }}
-                                )
-                        except json.JSONDecodeError as je:
-                            logger.warning(f"Failed to parse analysis result as JSON: {str(je)}")
-                            # Store raw result
-                            contracts_collection.update_one(
-                                {"_id": session_id},
-                                {"$set": {
-                                    "status": "completed",
-                                    "analysis_result": {"raw_response": analysis_result},
-                                    "completed_at": datetime.datetime.now()
-                                }}
-                            )
-                    else:
-                        logger.warning(f"No valid analysis result from AI service: {analysis_result}")
-                        contracts_collection.update_one(
-                            {"_id": session_id},
-                            {"$set": {"status": "failed", "error": analysis_result or "AI service unavailable"}}
-                        )
-                else:
-                    logger.warning("No system prompt configured for analysis")
-                    contracts_collection.update_one(
-                        {"_id": session_id},
-                        {"$set": {"status": "failed", "error": "No system prompt configured"}}
-                    )
-                    
-            except Exception as analysis_error:
-                logger.error(f"Error during analysis: {str(analysis_error)}")
-                import traceback
-                traceback.print_exc()
-                contracts_collection.update_one(
-                    {"_id": session_id},
-                    {"$set": {"status": "failed", "error": str(analysis_error)}}
-                )
-            
-            # Cleanup temp file
-            try:
-                os.remove(temp_file_path)
-            except:
-                pass
-            
-            return jsonify({
-                "message": "Contract analysis initiated successfully.",
-                "session_id": session_id,
-                "analysis_type": analysis_type,
-                "jurisdiction": jurisdiction,
-                "status": "processing",
-                "original_filename": original_filename
-            })
-        
-        elif request.json and 'text' in request.json:
-            text_content = request.json['text']
-            logger.info(f"Processing text input: {len(text_content)} characters")
-            
-            # For text input, create simple structured format with paragraph IDs
-            paragraphs = text_content.strip().split('\n')
-            structured_parts = []
-            for idx, para in enumerate(paragraphs):
-                if para.strip():
-                    structured_parts.append(f"[[ID:para_{idx}]]\n{para.strip()}")
-            structured_text = "\n\n".join(structured_parts) if structured_parts else text_content
-            
-            # Detect contract language for output
-            from langdetect import detect
-            try:
-                detected_lang = detect(text_content[:1000])
-                output_language = "العربية" if detected_lang == "ar" else "English"
-                logger.info(f"Detected contract language: {detected_lang}, output_language: {output_language}")
-            except:
-                output_language = "العربية"
-                logger.info(f"Language detection failed, defaulting to Arabic")
-            
-            # Save session to database first
-            session_doc = {
-                "_id": session_id,
-                "original_filename": "text_input.txt",
-                "analysis_type": analysis_type,
-                "jurisdiction": jurisdiction,
-                "original_contract_plain": text_content,
-                "original_contract_markdown": structured_text,
-                "created_at": datetime.datetime.now(),
-                "status": "processing",
-                "text_length": len(text_content)
-            }
-            contracts_collection.insert_one(session_doc)
-            
-            # Perform actual analysis using AI service with file_search integration
-            try:
-                from config.default import DefaultConfig
-                from app.services.file_search import FileSearchService
-                config = DefaultConfig()
-                
-                # Step 1: Use file_search to get relevant AAOIFI context
-                aaoifi_context = ""
-                try:
-                    logger.info(f"Starting file search for session: {session_id}")
-                    file_search_service = FileSearchService()
-                    chunks, extracted_terms = file_search_service.search_chunks(structured_text)
-                    
-                    if chunks:
-                        logger.info(f"File search returned {len(chunks)} relevant AAOIFI chunks")
-                        aaoifi_chunks_text = []
-                        for chunk in chunks:
-                            chunk_text = chunk.get("chunk_text", "")
-                            if chunk_text:
-                                aaoifi_chunks_text.append(chunk_text)
-                        aaoifi_context = "\n\n---\n\n".join(aaoifi_chunks_text)
-                        logger.info(f"AAOIFI context length: {len(aaoifi_context)} characters")
-                    else:
-                        logger.warning("No AAOIFI chunks found from file search")
-                        aaoifi_context = "لا توجد مراجع AAOIFI متاحة حالياً"
-                except Exception as fs_error:
-                    logger.error(f"File search failed: {str(fs_error)}")
-                    aaoifi_context = "لا توجد مراجع AAOIFI متاحة حالياً"
-                
-                # Step 2: Select and format the system prompt
-                if analysis_type == "sharia":
-                    sys_prompt_template = config.SYS_PROMPT_SHARIA
-                else:
-                    sys_prompt_template = config.SYS_PROMPT_SHARIA  # Default to Sharia
-                
-                if sys_prompt_template and sys_prompt_template.startswith("ERROR:"):
-                    logger.error(f"Failed to load system prompt: {sys_prompt_template}")
-                    sys_prompt_template = ""
-                
-                if sys_prompt_template:
-                    # Format the prompt with output_language and aaoifi_context
-                    sys_prompt = sys_prompt_template.format(
-                        output_language=output_language,
-                        aaoifi_context=aaoifi_context
-                    )
-                    logger.info(f"Formatted system prompt length: {len(sys_prompt)} characters")
-                    
-                    # Send text for analysis
-                    analysis_result = send_text_to_remote_api(structured_text, session_id_key=f"{session_id}_analysis", formatted_system_prompt=sys_prompt)
-                    
-                    if analysis_result and not analysis_result.startswith("ERROR"):
-                        # Parse and store analysis results
-                        import json
-                        import re
-                        try:
-                            # Clean up the response - extract JSON from possible markdown or extra text
-                            clean_result = analysis_result.strip()
-                            logger.info(f"Raw analysis result length: {len(clean_result)} characters")
-                            
-                            # Try to extract JSON from markdown code blocks
-                            if "```" in clean_result:
-                                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', clean_result)
-                                if json_match:
-                                    clean_result = json_match.group(1).strip()
-                                    logger.info(f"Extracted JSON from markdown block")
-                            
-                            # Try to find JSON array if response has extra text
-                            if not clean_result.startswith('[') and not clean_result.startswith('{'):
-                                # Look for JSON array in the response
-                                array_match = re.search(r'(\[[\s\S]*\])', clean_result)
-                                if array_match:
-                                    clean_result = array_match.group(1).strip()
-                                    logger.info(f"Extracted JSON array from text")
-                            
-                            logger.info(f"Clean result starts with: {clean_result[:100] if len(clean_result) > 100 else clean_result}")
-                            analysis_data = json.loads(clean_result)
-                            logger.info(f"Parsed JSON type: {type(analysis_data).__name__}")
-                            
-                            # Handle both list format and dict with "terms" key
-                            terms_list = []
-                            if isinstance(analysis_data, list):
-                                terms_list = analysis_data
-                                logger.info(f"Analysis data is a list with {len(terms_list)} items")
-                            elif isinstance(analysis_data, dict):
-                                if "terms" in analysis_data:
-                                    terms_list = analysis_data["terms"]
-                                    logger.info(f"Analysis data is a dict with 'terms' key, {len(terms_list)} items")
-                                else:
-                                    logger.warning(f"Analysis data is dict but no 'terms' key. Keys: {list(analysis_data.keys())}")
-                            
-                            if terms_list:
-                                logger.info(f"Parsed {len(terms_list)} terms from analysis result")
-                                # Store individual terms
-                                for term_data in terms_list:
-                                    term_doc = {
-                                        "session_id": session_id,
-                                        "term_id": term_data.get("term_id"),
-                                        "term_text": term_data.get("term_text"),
-                                        "is_valid_sharia": term_data.get("is_valid_sharia", False),
-                                        "sharia_issue": term_data.get("sharia_issue"),
-                                        "modified_term": term_data.get("modified_term"),
-                                        "reference_number": term_data.get("reference_number"),
-                                        "aaoifi_evidence": term_data.get("aaoifi_evidence"),
-                                        "analyzed_at": datetime.datetime.now()
-                                    }
-                                    terms_collection.insert_one(term_doc)
-                                
-                                # Update session status
-                                contracts_collection.update_one(
-                                    {"_id": session_id},
-                                    {"$set": {
-                                        "status": "completed",
-                                        "analysis_result": {"terms": terms_list},
-                                        "terms_count": len(terms_list),
-                                        "completed_at": datetime.datetime.now()
-                                    }}
-                                )
-                                logger.info(f"Text analysis completed successfully with {len(terms_list)} terms for session: {session_id}")
-                            else:
-                                logger.warning("No terms found in analysis result")
-                                contracts_collection.update_one(
-                                    {"_id": session_id},
-                                    {"$set": {
-                                        "status": "completed",
-                                        "analysis_result": {"raw_response": analysis_result},
-                                        "completed_at": datetime.datetime.now()
-                                    }}
-                                )
-                        except json.JSONDecodeError as je:
-                            logger.warning(f"Failed to parse analysis result as JSON: {str(je)}")
-                            # Store raw result
-                            contracts_collection.update_one(
-                                {"_id": session_id},
-                                {"$set": {
-                                    "status": "completed",
-                                    "analysis_result": {"raw_response": analysis_result},
-                                    "completed_at": datetime.datetime.now()
-                                }}
-                            )
-                    else:
-                        logger.warning(f"No valid analysis result from AI service: {analysis_result}")
-                        contracts_collection.update_one(
-                            {"_id": session_id},
-                            {"$set": {"status": "failed", "error": analysis_result or "AI service unavailable"}}
-                        )
-                else:
-                    logger.warning("No system prompt configured for analysis")
-                    contracts_collection.update_one(
-                        {"_id": session_id},
-                        {"$set": {"status": "failed", "error": "No system prompt configured"}}
-                    )
-                    
-            except Exception as analysis_error:
-                logger.error(f"Error during text analysis: {str(analysis_error)}")
-                import traceback
-                traceback.print_exc()
-                contracts_collection.update_one(
-                    {"_id": session_id},
-                    {"$set": {"status": "failed", "error": str(analysis_error)}}
-                )
-            
-            return jsonify({
-                "message": "Text analysis initiated successfully.",
-                "session_id": session_id,
-                "analysis_type": analysis_type,
-                "jurisdiction": jurisdiction,
-                "status": "processing",
-                "text_length": len(text_content)
-            })
-        
+            effective_ext = f".{original_cloudinary_info['format']}" if original_cloudinary_info['format'] else os.path.splitext(original_filename)[1].lower()
         else:
-            return jsonify({"error": "No file or text provided for analysis."}), 400
+            # Fallback: save locally if Cloudinary not available
+            ensure_dir(TEMP_PROCESSING_FOLDER)
+            temp_processing_file_path = os.path.join(TEMP_PROCESSING_FOLDER, f"{session_id_local}_{original_filename}")
+            uploaded_file_storage.save(temp_processing_file_path)
+            effective_ext = os.path.splitext(original_filename)[1].lower()
+            original_cloudinary_info = {
+                "url": f"local://{temp_processing_file_path}",
+                "public_id": None,
+                "format": effective_ext.replace(".", ""),
+                "user_facing_filename": original_filename
+            }
+            logger.info(f"File saved locally (Cloudinary unavailable): {temp_processing_file_path}")
+
+        detected_lang = 'ar'
+        original_contract_plain = ""
+        original_contract_markdown = None
+        generated_markdown_from_docx = None
+        analysis_input_text = None
+        original_format_to_store = effective_ext.replace(".", "") if effective_ext else "unknown"
+
+        logger.info(f"Processing file with extension: {effective_ext}")
+
+        if effective_ext == ".docx":
+            logger.info("Processing DOCX file")
+            doc = DocxDocument(temp_processing_file_path)
+            analysis_input_text, original_contract_plain = build_structured_text_for_analysis(doc)
+            generated_markdown_from_docx = analysis_input_text
+            original_format_to_store = "docx"
+            logger.info(f"Extracted {len(original_contract_plain)} characters from DOCX")
             
+        elif effective_ext in [".pdf", ".txt"]:
+            logger.info(f"Processing {effective_ext.upper()} file")
+            extracted_markdown_from_llm = ai_extract_text(temp_processing_file_path)
+            if extracted_markdown_from_llm is None:
+                logger.error(f"Text extraction failed for {effective_ext}")
+                raise ValueError(f"Text extraction failed for {effective_ext}.")
+            original_contract_markdown = extracted_markdown_from_llm
+            analysis_input_text = original_contract_markdown
+            if extracted_markdown_from_llm:
+                original_contract_plain = re.sub(
+                    r'^#+\s*|\*\*|\*|__|`|\[\[.*?\]\]', 
+                    '', 
+                    extracted_markdown_from_llm, 
+                    flags=re.MULTILINE
+                ).strip()
+            original_format_to_store = effective_ext.replace(".", "")
+            logger.info(f"Extracted {len(original_contract_plain)} characters from {effective_ext.upper()}")
+        else:
+            logger.error(f"Unsupported file type: {effective_ext}")
+            return jsonify({"error": f"Unsupported file type after upload: {effective_ext}"}), 400
+
+        # Detect language
+        if original_contract_plain and len(original_contract_plain) > 20:
+            try:
+                detected_lang = 'ar' if detect(original_contract_plain[:1000]) == 'ar' else 'en'
+                logger.info(f"Detected contract language: {detected_lang}")
+            except LangDetectException:
+                logger.warning("Language detection failed, defaulting to Arabic")
+
+        # Load and format system prompt
+        from config.default import DefaultConfig
+        config = DefaultConfig()
+        sys_prompt = config.SYS_PROMPT
+        if not sys_prompt:
+            logger.error("System prompt not loaded - check prompts/ directory")
+            raise ValueError("System prompt configuration error.")
+        formatted_sys_prompt = sys_prompt.format(output_language=detected_lang)
+        
+        if not analysis_input_text or not analysis_input_text.strip():
+            logger.error("Analysis input text is empty")
+            raise ValueError("Analysis input text is empty.")
+
+        # Send to AI for analysis
+        logger.info("Sending contract to LLM for analysis")
+        external_response_text = send_text_to_remote_api(
+            analysis_input_text, 
+            f"{session_id_local}_analysis_final", 
+            formatted_sys_prompt
+        )
+        
+        if not external_response_text or external_response_text.startswith(("ERROR_PROMPT_BLOCKED", "ERROR_CONTENT_BLOCKED")):
+            logger.error(f"Invalid/blocked response from analysis: {external_response_text}")
+            raise ValueError(f"Invalid/blocked response from analysis: {external_response_text or 'No response'}")
+
+        # Parse analysis results
+        logger.info("Parsing LLM analysis results")
+        analysis_results_list = json.loads(clean_model_response(external_response_text))
+        if not isinstance(analysis_results_list, list):
+            analysis_results_list = []
+
+        logger.info(f"Analysis completed with {len(analysis_results_list)} terms identified")
+
+        # Save analysis results to temp JSON file
+        with tempfile.NamedTemporaryFile(
+            mode='w', 
+            encoding='utf-8', 
+            suffix='.json', 
+            dir=TEMP_PROCESSING_FOLDER, 
+            delete=False
+        ) as tmp_json_file:
+            json.dump(analysis_results_list, tmp_json_file, ensure_ascii=False, indent=2)
+            temp_analysis_results_path = tmp_json_file.name
+
+        # Upload analysis results to Cloudinary
+        if temp_analysis_results_path and CLOUDINARY_AVAILABLE:
+            results_safe_public_id = generate_safe_public_id(file_base, "analysis_results")
+            results_upload_result = upload_to_cloudinary_helper(
+                temp_analysis_results_path,
+                analysis_results_cloudinary_folder,
+                resource_type="raw",
+                public_id_prefix="analysis_results",
+                custom_public_id=results_safe_public_id
+            )
+            if results_upload_result:
+                analysis_results_cloudinary_info = {
+                    "url": results_upload_result.get("secure_url"),
+                    "public_id": results_upload_result.get("public_id"),
+                    "format": results_upload_result.get("format", "json"),
+                    "user_facing_filename": "analysis_results.json"
+                }
+                logger.info("Analysis results uploaded to Cloudinary")
+
+        # Save contract document to database
+        contract_doc = {
+            "_id": session_id_local,
+            "session_id": session_id_local,
+            "original_filename": original_filename,
+            "original_cloudinary_info": original_cloudinary_info,
+            "analysis_results_cloudinary_info": analysis_results_cloudinary_info,
+            "original_format": original_format_to_store,
+            "original_contract_plain": original_contract_plain,
+            "original_contract_markdown": original_contract_markdown,
+            "generated_markdown_from_docx": generated_markdown_from_docx,
+            "detected_contract_language": detected_lang,
+            "analysis_timestamp": datetime.datetime.now(datetime.timezone.utc),
+            "confirmed_terms": {},
+            "interactions": [],
+            "modified_contract_info": None,
+            "marked_contract_info": None,
+            "pdf_preview_info": {}
+        }
+        contracts_collection.insert_one(contract_doc)
+        logger.info(f"Contract document saved to database for session: {session_id_local}")
+
+        # Save terms to database
+        terms_to_insert = [
+            {"session_id": session_id_local, **term} 
+            for term in analysis_results_list 
+            if isinstance(term, dict) and "term_id" in term
+        ]
+        if terms_to_insert:
+            terms_collection.insert_many(terms_to_insert)
+            logger.info(f"Inserted {len(terms_to_insert)} terms to database")
+
+        # Build response matching old API format exactly
+        response_payload = {
+            "message": "Contract analyzed successfully.",
+            "analysis_results": analysis_results_list,
+            "session_id": session_id_local,
+            "original_contract_plain": original_contract_plain,
+            "detected_contract_language": detected_lang,
+            "original_cloudinary_url": original_cloudinary_info.get("url") if original_cloudinary_info else None
+        }
+        response = jsonify(response_payload)
+        response.set_cookie(
+            "session_id", 
+            session_id_local, 
+            max_age=86400*30, 
+            httponly=True, 
+            samesite='Lax', 
+            secure=request.is_secure
+        )
+
+        logger.info(f"Analysis completed successfully for session: {session_id_local}")
+        return response
+
+    except json.JSONDecodeError as je:
+        logger.error(f"JSON parse error in analysis for session {session_id_local}: {je}")
+        traceback.print_exc()
+        return jsonify({"error": f"Failed to parse analysis response: {str(je)}"}), 500
+        
     except Exception as e:
-        logger.error(f"Error during analysis: {str(e)}")
-        return jsonify({"error": "Internal server error during analysis."}), 500
+        logger.error(f"Analysis failed for session {session_id_local}: {e}")
+        traceback.print_exc()
+        return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+        
+    finally:
+        # Cleanup temporary files
+        if temp_processing_file_path and os.path.exists(temp_processing_file_path):
+            try:
+                os.remove(temp_processing_file_path)
+                logger.debug("Cleaned up temporary processing file")
+            except Exception as e_clean:
+                logger.warning(f"Error deleting temp original file: {e_clean}")
+        if temp_analysis_results_path and os.path.exists(temp_analysis_results_path):
+            try:
+                os.remove(temp_analysis_results_path)
+                logger.debug("Cleaned up temporary analysis results file")
+            except Exception as e_clean:
+                logger.warning(f"Error deleting temp analysis JSON file: {e_clean}")

@@ -1,6 +1,6 @@
 """
 AI Service for Google Generative AI integration.
-Refactored to use the new google-genai SDK.
+Refactored to use the new google-genai SDK while maintaining compatibility with old patterns.
 """
 
 import pathlib
@@ -14,9 +14,7 @@ from google.genai import types
 
 logger = logging.getLogger(__name__)
 
-# Global chat sessions storage
 chat_sessions = {}
-# Global client storage to prevent garbage collection
 _clients = {}
 
 def init_ai_service(app):
@@ -34,7 +32,11 @@ def init_ai_service(app):
         logger.error(f"Error initializing Google GenAI service: {e}")
         traceback.print_exc()
 
-from app.utils.logging_utils import mask_key
+def mask_key(key):
+    """Mask API key for logging."""
+    if not key:
+        return "None"
+    return f"{key[:8]}...{key[-4:]}" if len(key) > 12 else "***"
 
 def get_client():
     """Get a configured GenAI client."""
@@ -42,7 +44,6 @@ def get_client():
     if not api_key:
         raise ValueError("API Key not configured")
     
-    # Log key usage (masked)
     logger.info(f"Creating GenAI client with API Key: {mask_key(api_key)}")
     
     return genai.Client(api_key=api_key)
@@ -90,7 +91,10 @@ def get_chat_session(session_id_key: str, system_instruction: str | None = None,
     return chat_sessions[session_id_key]
 
 def send_text_to_remote_api(text_payload: str, session_id_key: str, formatted_system_prompt: str):
-    """Send text to AI API for processing."""
+    """
+    Send text to AI API for processing.
+    Matches the interface of old remote_api.py send_text_to_remote_api function.
+    """
     if not text_payload or not text_payload.strip():
         logger.warning(f"Empty text_payload for session_id_key {session_id_key}")
         return ""
@@ -101,67 +105,124 @@ def send_text_to_remote_api(text_payload: str, session_id_key: str, formatted_sy
         chat = get_chat_session(session_id_key, system_instruction=formatted_system_prompt, force_new=True)
         
         max_retries = 3
+        retry_delay = 5
+        
         for attempt in range(max_retries):
             try:
                 logger.info(f"Sending request to AI API (attempt {attempt + 1}/{max_retries})")
                 response = chat.send_message(text_payload)
                 
-                if response and response.text:
-                    logger.info(f"Received response from AI API: {len(response.text)} characters")
-                    return response.text
-                else:
-                    logger.warning(f"Empty response from AI API on attempt {attempt + 1}")
+                if not response.text:
+                    if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+                        block_reason = getattr(response.prompt_feedback, 'block_reason', None)
+                        if block_reason:
+                            block_reason_msg = f"Prompt blocked for session {session_id_key}. Reason: {block_reason}"
+                            logger.warning(block_reason_msg)
+                            return f"ERROR_PROMPT_BLOCKED: {block_reason}"
                     
-            except Exception as e:
-                logger.error(f"AI API request failed on attempt {attempt + 1}: {e}")
-                if attempt < max_retries - 1:
-                    time.sleep(2 ** attempt)  # Exponential backoff
+                    if hasattr(response, 'candidates') and response.candidates:
+                        candidate = response.candidates[0]
+                        finish_reason = getattr(candidate, 'finish_reason', None)
+                        if finish_reason and str(finish_reason) != "STOP":
+                            block_reason_msg = f"Content possibly blocked/filtered for session {session_id_key}. Finish Reason: {finish_reason}"
+                            logger.warning(block_reason_msg)
+                            if str(finish_reason) == "SAFETY":
+                                return f"ERROR_CONTENT_BLOCKED_SAFETY: {finish_reason}"
+                            return f"ERROR_CONTENT_BLOCKED: {finish_reason}"
+                    
+                    logger.warning(f"Received empty text response from API for session {session_id_key} on attempt {attempt + 1}")
+                    if attempt == max_retries - 1:
+                        logger.error(f"All retries resulted in empty response for {session_id_key}.")
+                        return ""
                 else:
+                    logger.info(f"Received successful response for session {session_id_key}. Response text length: {len(response.text)}")
+                    return response.text
+                    
+            except Exception as e_inner:
+                logger.error(f"Attempt {attempt + 1} failed for send_message to API for session {session_id_key}: {e_inner}")
+                traceback.print_exc()
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying in {retry_delay} seconds for session {session_id_key}...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                else:
+                    logger.error(f"All retries failed for session {session_id_key}.")
                     raise
         
-        return "ERROR_API_FAILED"
-        
-    except Exception as e:
-        logger.error(f"Critical error in AI API communication: {e}")
-        traceback.print_exc()
-        return f"ERROR_API_COMMUNICATION: {str(e)}"
+        return ""
 
-def extract_text_from_file(file_path: str):
-    """Extract text from PDF/TXT files using AI."""
+    except Exception as e:
+        logger.error(f"General error during text sending to API for session {session_id_key}: {e}")
+        traceback.print_exc()
+        raise Exception(f"فشل في استدعاء API للنموذج: {e}")
+
+def extract_text_from_file(file_path: str) -> str | None:
+    """
+    Extract text from PDF/TXT files using AI.
+    Matches the interface of old remote_api.py extract_text_from_file function.
+    """
+    path_obj = pathlib.Path(file_path)
+    ext = path_obj.suffix.lower()
+
+    if ext not in [".pdf", ".txt"]:
+        logger.warning(f"Unsupported file type for extraction: {ext}")
+        return None
+        
     try:
         logger.info(f"Extracting text from file: {file_path}")
         
-        extraction_prompt = current_app.config.get('EXTRACTION_PROMPT', 
-            "Extract the full text from the provided file with high accuracy. Use **Markdown** format to preserve structure.")
+        from config.default import DefaultConfig
+        config = DefaultConfig()
+        extraction_prompt = config.EXTRACTION_PROMPT
             
         client = get_client()
-        
-        # Upload file to AI service
-        # Note: google-genai uses client.files.upload
-        file_path_obj = pathlib.Path(file_path)
-        sample_file = client.files.upload(path=file_path_obj, config={'display_name': "Contract Document"})
-        logger.info(f"File uploaded to AI service: {sample_file.name}")
-        
-        # Wait for file to be active (if needed, though usually fast for small files)
-        # For PDF extraction, we might need to wait? 
-        # The new SDK handles this usually, but let's be safe if it's large.
-        # But for now, standard generate_content.
-        
         model_name = current_app.config.get('MODEL_NAME', 'gemini-2.5-flash')
         
-        response = client.models.generate_content(
-            model=model_name,
-            contents=[sample_file, extraction_prompt]
-        )
+        file_data = path_obj.read_bytes()
+        mime_type = "application/pdf" if ext == ".pdf" else "text/plain"
         
-        if response and response.text:
-            logger.info(f"Text extraction completed: {len(response.text)} characters")
-            return response.text
-        else:
-            logger.error("No text extracted from file")
-            return None
-            
+        max_retries = 2
+        retry_delay = 3
+        
+        for attempt in range(max_retries):
+            try:
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[
+                        types.Part.from_bytes(data=file_data, mime_type=mime_type),
+                        extraction_prompt
+                    ]
+                )
+                
+                if response and response.text:
+                    logger.info(f"Successfully extracted text from {file_path}. Text length: {len(response.text)}")
+                    return response.text
+                    
+                if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
+                    block_reason = getattr(response.prompt_feedback, 'block_reason', None)
+                    if block_reason:
+                        logger.warning(f"Extraction prompt blocked for {file_path}. Reason: {block_reason}")
+                        return None
+                
+                logger.warning(f"Empty text from extraction for {file_path} on attempt {attempt + 1}")
+                if attempt == max_retries - 1:
+                    logger.error(f"All retries failed to extract text from {file_path}.")
+                    return None
+                    
+            except Exception as e_inner:
+                logger.error(f"Attempt {attempt + 1} failed for extraction of {file_path}: {e_inner}")
+                if attempt < max_retries - 1:
+                    logger.info(f"Retrying extraction for {file_path} in {retry_delay} seconds...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                else:
+                    traceback.print_exc()
+                    logger.error(f"Failed extraction for {file_path} after all retries.")
+                    return None
+                    
+        return None
+        
     except Exception as e:
-        logger.error(f"Text extraction failed for {file_path}: {e}")
+        logger.error(f"General error during text extraction from file {file_path}: {e}")
         traceback.print_exc()
         return None

@@ -114,8 +114,31 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### November 30, 2025 - Backend Realignment with Old Working Version
+- Fixed AI service to work with new google-genai SDK
+- Updated prompts to remove incompatible placeholders (only {output_language} needed)
+- Rewrote /analyze endpoint to match old api_server.py response format exactly
+- Added /api/stats/user and /api/history endpoints
+- Fixed document processing to use build_structured_text_for_analysis properly
+- Updated cloudinary service with upload_to_cloudinary_helper function
+- Session cookies now properly set on analyze response
+- All endpoints now return response format expected by frontend
+
+### Previous Updates
 - Fixed AI service function signatures
 - Integrated file search for AAOIFI context
 - Added language detection for output formatting
 - Improved JSON parsing for AI responses
 - Created proper .gitignore for security
+
+## Architecture Notes
+
+The backend uses Flask blueprints pattern:
+- analysis_bp: Core analysis endpoints (/analyze, /session, /terms)
+- interaction_bp: Q&A and modifications
+- generation_bp: Contract generation
+- api_bp: Statistics and history (/api/stats/user, /api/history)
+- admin_bp: Administrative functions
+- file_search_bp: AAOIFI standards search (new feature)
+
+The old working code is preserved in OldStrcturePerfectProject/ for reference.
