@@ -2,13 +2,16 @@
 Cloudinary Service
 
 Cloud storage management for the Shariaa Contract Analyzer.
+Matches OldStrcturePerfectProject/utils.py upload_to_cloudinary_helper exactly.
 """
 
+import os
+import uuid
 import logging
+import traceback
 
 logger = logging.getLogger(__name__)
 
-# Import cloudinary with graceful fallback
 try:
     import cloudinary
     import cloudinary.uploader
@@ -53,36 +56,55 @@ def upload_to_cloudinary_helper(
     public_id_prefix: str = "",
     custom_public_id: str = None
 ):
-    """Upload a file to Cloudinary with helper options."""
+    """
+    Uploads a local file to Cloudinary.
+    Matches OldStrcturePerfectProject/utils.py upload_to_cloudinary_helper exactly.
+    """
     if not CLOUDINARY_AVAILABLE:
         logger.error("Cloudinary not available for upload")
         return None
         
     try:
-        import uuid
-        import traceback
+        if not isinstance(local_file_path, str):
+            raise TypeError(f"upload_to_cloudinary_helper expects a string file path, got {type(local_file_path)}")
+
+        from app.utils.file_helpers import clean_filename
         
+        if custom_public_id:
+            public_id = custom_public_id
+        else:
+            filename = os.path.basename(local_file_path)
+            base_name = filename.rsplit('.', 1)[0]
+            public_id_suffix = clean_filename(base_name)
+            public_id = f"{public_id_prefix}_{uuid.uuid4().hex}"
+
         upload_options = {
             "folder": cloudinary_folder,
+            "public_id": public_id,
             "resource_type": resource_type,
             "overwrite": True
         }
         
-        if custom_public_id:
-            upload_options["public_id"] = custom_public_id
-        elif public_id_prefix:
-            upload_options["public_id"] = f"{public_id_prefix}_{uuid.uuid4().hex[:8]}"
-            
-        result = cloudinary.uploader.upload(local_file_path, **upload_options)
+        if "pdf_previews" in cloudinary_folder or local_file_path.lower().endswith(".pdf"):
+            upload_options["access_mode"] = "public" 
+            logger.info(f"Attempting to upload PDF with access_mode: public, resource_type: {resource_type}")
+
+        logger.debug(f"DEBUG: Attempting to upload to Cloudinary. File: {local_file_path}, Options: {upload_options}")
+        upload_result = cloudinary.uploader.upload(local_file_path, **upload_options)
+        logger.debug(f"DEBUG: Raw Cloudinary upload_result for {local_file_path}: {upload_result}")
         
-        if result and result.get("secure_url"):
-            logger.info(f"File uploaded to Cloudinary: {result['secure_url']}")
-            return result
-        else:
-            logger.error("Cloudinary upload failed - no secure URL returned")
+        if not upload_result or not upload_result.get("secure_url"):
+            logger.error(f"ERROR_DEBUG: Cloudinary upload for {local_file_path} returned problematic result: {upload_result}")
             return None
             
+        logger.info(f"Cloudinary upload successful. URL: {upload_result.get('secure_url')}")
+        return upload_result
+        
+    except cloudinary.exceptions.Error as e:
+        logger.error(f"ERROR_DEBUG: Cloudinary API Error during upload for {local_file_path}: {e}")
+        traceback.print_exc()
+        return None
     except Exception as e:
-        logger.error(f"Error uploading to Cloudinary: {e}")
+        logger.error(f"ERROR_DEBUG: Cloudinary upload EXCEPTION for {local_file_path}: {e}")
         traceback.print_exc()
         return None

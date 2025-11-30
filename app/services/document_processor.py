@@ -474,12 +474,179 @@ def create_docx_from_llm_markdown(
                     l_style, l_text, _, l_is_list = _determine_style_and_text(line_in_remaining, contract_language)
                     _add_paragraph_with_markdown_formatting(doc, l_style, l_text, contract_language, chosen_font, is_list_item=l_is_list, list_indent=list_indent_val if l_is_list else None, first_line_indent_list=first_line_indent_val_list if l_is_list and contract_language == 'ar' else None)
         else:
-            for line in processed_markdown_text.split('\n'):
-                line = line.strip()
-                if not line or "[[TABLE_" in line:
+            logger.info(f"DOC_PROCESSING: Using old dict-based or no-term marking logic. terms_for_marking type: {type(terms_for_marking)}")
+            lines_to_process = processed_markdown_text.split('\n')
+            i = 0
+            while i < len(lines_to_process):
+                line = lines_to_process[i].strip()
+                if not line or "[[TABLE_" in line: 
+                    i += 1
                     continue
-                l_style, l_text, _, l_is_list = _determine_style_and_text(line, contract_language)
-                _add_paragraph_with_markdown_formatting(doc, l_style, l_text, contract_language, chosen_font, is_list_item=l_is_list, list_indent=list_indent_val if l_is_list else None, first_line_indent_list=first_line_indent_val_list if l_is_list and contract_language == 'ar' else None)
+
+                if line.startswith('|') and line.endswith('|') and line.count('|') > 1:
+                    table_lines = []
+                    temp_i = i
+                    while temp_i < len(lines_to_process) and lines_to_process[temp_i].strip().startswith('|') and lines_to_process[temp_i].strip().endswith('|'):
+                        table_lines.append(lines_to_process[temp_i].strip())
+                        temp_i += 1
+                    if len(table_lines) > 1 and re.match(r'\|(\s*:?-+:?\s*\|)+', table_lines[1]): 
+                        header_row_content = [h.strip() for h in table_lines[0].strip('|').split('|')]
+                        num_cols = len(header_row_content)
+                        if num_cols > 0:
+                            table_data_rows = []
+                            for row_line_idx in range(2, len(table_lines)):
+                                row_content_raw = [cell.strip().replace('<br>', '\n') for cell in table_lines[row_line_idx].strip('|').split('|')]
+                                row_content = row_content_raw + [''] * (num_cols - len(row_content_raw)) if len(row_content_raw) < num_cols else row_content_raw[:num_cols]
+                                table_data_rows.append(row_content)
+                            if table_data_rows:
+                                doc_table = doc.add_table(rows=1, cols=num_cols)
+                                doc_table.style = 'CustomTable'
+                                if contract_language == 'ar':
+                                    doc_table.table_direction = WD_TABLE_DIRECTION.RTL
+                                    doc_table.alignment = WD_TABLE_ALIGNMENT.RIGHT
+                                else:
+                                    doc_table.table_direction = WD_TABLE_DIRECTION.LTR
+                                    doc_table.alignment = WD_TABLE_ALIGNMENT.LEFT
+                                hdr_cells = doc_table.rows[0].cells
+                                for col_idx, header_text in enumerate(header_row_content):
+                                    cell_p = hdr_cells[col_idx].paragraphs[0]
+                                    cell_p.text = ""
+                                    _add_paragraph_with_markdown_formatting(hdr_cells[col_idx], 'Normal', re.sub(r'\[\[ID:.*?\]\]\s*', '', header_text).strip(), contract_language, chosen_font)
+                                    hdr_cells[col_idx].paragraphs[0].alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                                    if contract_language == 'ar':
+                                        set_cell_direction_rtl(hdr_cells[col_idx])
+                                for data_row_content in table_data_rows:
+                                    row_cells = doc_table.add_row().cells
+                                    for col_idx, cell_text in enumerate(data_row_content):
+                                        cell_p = row_cells[col_idx].paragraphs[0]
+                                        cell_p.text = ""
+                                        _add_paragraph_with_markdown_formatting(row_cells[col_idx], 'Normal', re.sub(r'\[\[ID:.*?\]\]\s*', '', cell_text).strip(), contract_language, chosen_font)
+                                        if contract_language == 'ar':
+                                            set_cell_direction_rtl(row_cells[col_idx])
+                                doc.add_paragraph()
+                                i = temp_i
+                                continue
+                
+                current_style_name, text_for_paragraph_content, is_main_title, is_list_item_flag = _determine_style_and_text(line, contract_language)
+                
+                term_status_info = None
+                if isinstance(terms_for_marking, dict): 
+                    clean_para_text_for_match = re.sub(r'^\[\[ID:.*?\]\]\s*', '', text_for_paragraph_content).strip()
+                    term_status_info = terms_for_marking.get(clean_para_text_for_match) 
+
+                if term_status_info: 
+                    is_confirmed = term_status_info.get("is_confirmed", False)
+                    confirmed_text_content = term_status_info.get("confirmed_text")
+                    initial_is_valid = term_status_info.get("initial_is_valid", True)
+                    current_original_text_for_term = clean_para_text_for_match 
+
+                    if is_confirmed and confirmed_text_content and \
+                       not initial_is_valid and confirmed_text_content.strip() != current_original_text_for_term.strip():
+                        _add_paragraph_with_markdown_formatting(doc, current_style_name, current_original_text_for_term, contract_language, chosen_font, text_color=RGBColor(255,0,0), strike=False, is_list_item=is_list_item_flag, list_indent=list_indent_val if is_list_item_flag else None, first_line_indent_list=first_line_indent_val_list if is_list_item_flag and contract_language == 'ar' else None)
+                        sep_para = doc.add_paragraph(style='NormalStyle')
+                        sep_para.paragraph_format.rtl = (contract_language == 'ar')
+                        sep_para.alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT if contract_language == 'ar' else WD_PARAGRAPH_ALIGNMENT.LEFT
+                        sep_run = sep_para.add_run(("التعديل المؤكد: " if contract_language == 'ar' else "Confirmed Modification: "))
+                        sep_run.font.size = Pt(10)
+                        sep_run.italic = True
+                        sep_run.font.name = chosen_font
+                        sep_run.font.rtl = (contract_language == 'ar')
+                        _add_paragraph_with_markdown_formatting(doc, current_style_name, confirmed_text_content, contract_language, chosen_font, text_color=RGBColor(0,128,0), is_list_item=is_list_item_flag, list_indent=list_indent_val if is_list_item_flag else None, first_line_indent_list=first_line_indent_val_list if is_list_item_flag and contract_language == 'ar' else None)
+                    else:
+                        text_to_render = current_original_text_for_term
+                        final_text_color = None
+                        if is_confirmed and confirmed_text_content:
+                            text_to_render = confirmed_text_content
+                            final_text_color = RGBColor(0,128,0)
+                        elif not initial_is_valid:
+                            final_text_color = RGBColor(255,0,0)
+                        _add_paragraph_with_markdown_formatting(doc, current_style_name, text_to_render, contract_language, chosen_font, text_color=final_text_color, strike=False, is_list_item=is_list_item_flag, list_indent=list_indent_val if is_list_item_flag else None, first_line_indent_list=first_line_indent_val_list if is_list_item_flag and contract_language == 'ar' else None)
+                else: 
+                    _add_paragraph_with_markdown_formatting(doc, current_style_name, text_for_paragraph_content, contract_language, chosen_font, text_color=None, strike=False, is_list_item=is_list_item_flag, list_indent=list_indent_val if is_list_item_flag else None, first_line_indent_list=first_line_indent_val_list if is_list_item_flag and contract_language == 'ar' else None)
+                
+                i += 1
+        
+        signature_found = any(sig_ar in line_text or sig_en in line_text 
+                              for line_text in processed_markdown_text.split('\n') 
+                              for sig_ar in ["وحرر هذا العقد", "التوقيعات", "الطرف الأول", "الطرف الثاني", "الشاهد الأول", "الشاهد الثاني"] 
+                              for sig_en in ["This contract was made", "Signatures", "Party One", "Party Two", "First Witness", "Second Witness"])
+        
+        if not signature_found:
+            doc.add_paragraph() 
+            if contract_language == 'ar':
+                p_sig_text = doc.add_paragraph(style='NormalStyle')
+                p_sig_text.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                p_sig_text.add_run("وحرر هذا العقد من نسختين بيد كل طرف نسخة للعمل بموجبها عند اللزوم.").font.name = chosen_font
+                
+                doc.add_paragraph() 
+                
+                sig_heading = doc.add_paragraph(style='Heading3Style')
+                sig_heading.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                sig_heading.add_run("التوقيعات").font.name = chosen_font
+                
+                table_sig = doc.add_table(rows=1, cols=2)
+                table_sig.style = 'CustomTable'
+                table_sig.alignment = WD_TABLE_ALIGNMENT.CENTER
+                if contract_language == 'ar':
+                    table_sig.table_direction = WD_TABLE_DIRECTION.RTL
+
+                def add_sig_cell_content(cell, party_name_text):
+                    p_party_name = cell.paragraphs[0] if cell.paragraphs else cell.add_paragraph()
+                    p_party_name.text = "" 
+                    run_party_name = p_party_name.add_run(party_name_text)
+                    run_party_name.font.name = chosen_font
+                    run_party_name.font.bold = True
+                    run_party_name.font.size = Pt(12)
+                    p_party_name.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                    if contract_language == 'ar':
+                        p_party_name.paragraph_format.rtl = True
+                    
+                    cell.add_paragraph(f"الإسم: \t\t\t", style='NormalStyle').alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT if contract_language == 'ar' else WD_PARAGRAPH_ALIGNMENT.LEFT
+                    cell.add_paragraph(f"بطاقة رقم قومي: \t\t", style='NormalStyle').alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT if contract_language == 'ar' else WD_PARAGRAPH_ALIGNMENT.LEFT
+                    cell.add_paragraph(f"التوقيع: \t\t\t", style='NormalStyle').alignment = WD_PARAGRAPH_ALIGNMENT.RIGHT if contract_language == 'ar' else WD_PARAGRAPH_ALIGNMENT.LEFT
+                    cell.add_paragraph("\n") 
+
+                add_sig_cell_content(table_sig.cell(0, 1), "الطرف الأول (البائعة)") 
+                add_sig_cell_content(table_sig.cell(0, 0), "الطرف الثاني (المشترية)") 
+                
+                doc.add_paragraph() 
+                witness_heading = doc.add_paragraph(style='Heading3Style')
+                witness_heading.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                witness_heading.add_run("توقيع الشهود").font.name = chosen_font
+
+                table_witness = doc.add_table(rows=1, cols=2)
+                table_witness.style = 'CustomTable'
+                table_witness.alignment = WD_TABLE_ALIGNMENT.CENTER
+                if contract_language == 'ar':
+                    table_witness.table_direction = WD_TABLE_DIRECTION.RTL
+                
+                add_sig_cell_content(table_witness.cell(0, 1), "الشاهد الأول")
+                add_sig_cell_content(table_witness.cell(0, 0), "الشاهد الثاني")
+
+            else: 
+                p_sig = doc.add_paragraph("This contract is executed in two counterparts...", style='NormalStyle')
+                p_sig.alignment = WD_PARAGRAPH_ALIGNMENT.LEFT
+                doc.add_paragraph("")
+                signature_section = doc.add_paragraph("Signatures", style='Heading2Style')
+                signature_section.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                table_sig = doc.add_table(rows=2, cols=2)
+                table_sig.style = 'CustomTable'
+                table_sig.table_direction = WD_TABLE_DIRECTION.LTR
+                table_sig.alignment = WD_TABLE_ALIGNMENT.LEFT
+                cell1_sig = table_sig.cell(0, 0)
+                cell1_para_sig = cell1_sig.paragraphs[0]
+                cell1_para_sig.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                cell1_run_sig = cell1_para_sig.add_run("Party One")
+                cell1_run_sig.font.name = chosen_font
+                cell1_run_sig.font.bold = True
+                cell2_sig = table_sig.cell(0, 1)
+                cell2_para_sig = cell2_sig.paragraphs[0]
+                cell2_para_sig.alignment = WD_PARAGRAPH_ALIGNMENT.CENTER
+                cell2_run_sig = cell2_para_sig.add_run("Party Two")
+                cell2_run_sig.font.name = chosen_font
+                cell2_run_sig.font.bold = True
+                table_sig.cell(1, 0).text = "\nName:\nID:\nSignature:\n____________________"
+                table_sig.cell(1, 1).text = "\nName:\nID:\nSignature:\n____________________"
 
         ensure_dir(os.path.dirname(output_path))
         doc.save(output_path)
@@ -490,46 +657,88 @@ def create_docx_from_llm_markdown(
     except Exception as e:
         logger.error(f"Error creating DOCX document: {e}")
         traceback.print_exc()
-        return None
+        raise ValueError(f"فشل إنشاء DOCX: {e}")
 
 
-def convert_docx_to_pdf(docx_file_path: str, output_folder: str) -> str | None:
-    """Convert a DOCX file to PDF using LibreOffice."""
+def convert_docx_to_pdf(docx_path: str, output_folder: str) -> str:
+    """
+    Converts a DOCX file to PDF using LibreOffice directly.
+    Returns the path to the generated PDF, or raises an exception on failure.
+    Requires LIBREOFFICE_PATH to be set in config or soffice to be in PATH.
+    """
+    if not os.path.exists(docx_path):
+        logger.error(f"DOCX file not found for PDF conversion: {docx_path}")
+        raise FileNotFoundError(f"DOCX file not found: {docx_path}")
+
+    ensure_dir(output_folder)
+
+    pdf_filename = os.path.splitext(os.path.basename(docx_path))[0] + ".pdf"
+    pdf_output_path = os.path.join(output_folder, pdf_filename)
+
     try:
-        ensure_dir(output_folder)
-        
-        libreoffice_path = current_app.config.get('LIBREOFFICE_PATH', 'libreoffice')
-        
-        logger.info(f"Converting DOCX to PDF: {docx_file_path} -> {output_folder}")
-        
-        command = [
-            libreoffice_path,
-            "--headless",
-            "--convert-to", "pdf",
-            "--outdir", output_folder,
-            docx_file_path
-        ]
-        
-        result = subprocess.run(command, capture_output=True, text=True, timeout=60)
-        
-        if result.returncode == 0:
-            docx_basename = os.path.splitext(os.path.basename(docx_file_path))[0]
-            pdf_path = os.path.join(output_folder, f"{docx_basename}.pdf")
-            
-            if os.path.exists(pdf_path):
-                logger.info(f"PDF conversion successful: {pdf_path}")
-                return pdf_path
-            else:
-                logger.error(f"PDF file not found after conversion: {pdf_path}")
-                return None
+        libreoffice_path = current_app.config.get('LIBREOFFICE_PATH')
+    except RuntimeError:
+        libreoffice_path = None
+    
+    soffice_cmd = libreoffice_path or "soffice"
+
+    command = [
+        soffice_cmd,
+        '--headless',
+        '--convert-to', 'pdf',
+        '--outdir', output_folder,
+        docx_path
+    ]
+
+    logger.info(f"Attempting PDF conversion with command: {' '.join(command)}")
+
+    try:
+        is_windows = os.name == 'nt'
+        startupinfo = None
+        if is_windows:
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+
+        result = subprocess.run(
+            command,
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=180,
+            startupinfo=startupinfo
+        )
+
+        if result.returncode != 0:
+            logger.error(f"Error converting DOCX to PDF. LibreOffice/soffice process exited with code: {result.returncode}")
+            logger.error(f"soffice stdout: {result.stdout}")
+            logger.error(f"soffice stderr: {result.stderr}")
+            if os.path.exists(pdf_output_path) and os.path.getsize(pdf_output_path) == 0:
+                os.remove(pdf_output_path)
+            raise Exception(f"LibreOffice/soffice conversion failed. STDERR: {result.stderr[:1000]}")
+
+        if os.path.exists(pdf_output_path) and os.path.getsize(pdf_output_path) > 0:
+            logger.info(f"PDF conversion successful: {pdf_output_path}")
+            return pdf_output_path
         else:
-            logger.error(f"LibreOffice conversion failed: {result.stderr}")
-            return None
-            
+            logger.error(f"PDF file not created or is empty at {pdf_output_path} despite successful soffice exit code.")
+            logger.error(f"soffice stdout: {result.stdout}")
+            logger.error(f"soffice stderr: {result.stderr}")
+            if os.path.exists(pdf_output_path):
+                os.remove(pdf_output_path)
+            raise Exception("PDF file not created or is empty after LibreOffice/soffice execution.")
+
+    except FileNotFoundError:
+        logger.error(f"CRITICAL ERROR: '{soffice_cmd}' command not found. Please ensure LibreOffice is installed and '{soffice_cmd}' is in your system PATH.")
+        raise Exception(f"PDF conversion tool ('{soffice_cmd}') not found. Check LibreOffice installation and PATH/config.")
     except subprocess.TimeoutExpired:
-        logger.error("LibreOffice conversion timed out")
-        return None
+        logger.error(f"PDF conversion timed out for {docx_path}.")
+        if os.path.exists(pdf_output_path):
+            os.remove(pdf_output_path)
+        raise Exception("PDF conversion timed out.")
     except Exception as e:
-        logger.error(f"Error during PDF conversion: {e}")
+        logger.error(f"An unexpected error occurred during PDF conversion for {docx_path}: {e}")
         traceback.print_exc()
-        return None
+        if os.path.exists(pdf_output_path):
+            os.remove(pdf_output_path)
+        raise Exception(f"PDF conversion failed: {str(e)}")

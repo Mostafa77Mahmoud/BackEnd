@@ -1,6 +1,6 @@
 """
 File handling utilities for the Shariaa Contract Analyzer.
-Consolidated from original utils.py and api_server.py
+Matches OldStrcturePerfectProject/utils.py exactly.
 """
 
 import os
@@ -11,6 +11,7 @@ import tempfile
 import requests
 from unidecode import unidecode
 
+
 def ensure_dir(dir_path: str):
     """Ensures that a directory exists, creating it if necessary."""
     try:
@@ -19,6 +20,7 @@ def ensure_dir(dir_path: str):
         print(f"ERROR: Could not create directory '{dir_path}': {e}")
         traceback.print_exc()
         raise
+
 
 def clean_filename(filename: str) -> str:
     """
@@ -29,42 +31,48 @@ def clean_filename(filename: str) -> str:
     if not filename:
         return f"contract_{uuid.uuid4().hex[:8]}"
 
-    # Transliterate Unicode characters to ASCII equivalents
     ascii_filename = unidecode(filename)
     
-    # Replace spaces with underscores
     safe_filename = ascii_filename.replace(" ", "_")
     
-    # Remove any character that is not a word character, whitespace (though spaces are gone), a hyphen, or a period.
     safe_filename = re.sub(r'[^\w\s.-]', '', safe_filename).strip()
 
-    # If the cleaning results in an empty filename, generate a unique one.
     if not safe_filename:
         return f"contract_{uuid.uuid4().hex[:8]}"
 
-    # Truncate to a maximum length to avoid issues with filesystem limits.
-    # Ensure extension is preserved if possible.
     max_len = 200 
     if len(safe_filename) > max_len:
         name, ext = os.path.splitext(safe_filename)
-        # Truncate the name part, then append extension
-        safe_filename = name[:max_len - len(ext) -1] + ext # -1 for the dot
+        safe_filename = name[:max_len - len(ext) - 1] + ext
     return safe_filename
 
-def download_file_from_url(file_url: str, suggested_filename: str, destination_folder: str) -> str | None:
-    """Downloads a file from URL to local destination folder. Returns local file path or None."""
+
+def download_file_from_url(url, original_filename_for_suffix, temp_processing_folder):
+    """
+    Downloads a file from a URL to a temporary location.
+    Matches OldStrcturePerfectProject/utils.py download_file_from_url exactly.
+    """
+    temp_file_path = None
     try:
-        response = requests.get(file_url, stream=True, timeout=30)
+        print(f"Attempting to download from URL: {url}")
+        response = requests.get(url, stream=True, timeout=120)
         response.raise_for_status()
         
-        ensure_dir(destination_folder)
-        local_file_path = os.path.join(destination_folder, clean_filename(suggested_filename))
+        file_extension = os.path.splitext(original_filename_for_suffix)[1] or '.tmp'
         
-        with open(local_file_path, 'wb') as f:
+        ensure_dir(temp_processing_folder)
+        
+        with tempfile.NamedTemporaryFile(delete=False, suffix=file_extension, dir=temp_processing_folder, mode='wb') as tmp_file:
             for chunk in response.iter_content(chunk_size=8192):
-                f.write(chunk)
-        
-        return local_file_path
+                tmp_file.write(chunk)
+            temp_file_path = tmp_file.name
+        print(f"File successfully downloaded to temporary path: {temp_file_path}")
+        return temp_file_path
+    except requests.exceptions.RequestException as e:
+        print(f"ERROR downloading {url}: {e}")
+        traceback.print_exc()
+        return None
     except Exception as e:
-        print(f"Error downloading file from {file_url}: {e}")
+        print(f"ERROR during download of {url}: {e}")
+        traceback.print_exc()
         return None

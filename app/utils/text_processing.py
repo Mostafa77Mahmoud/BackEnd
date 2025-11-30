@@ -1,72 +1,107 @@
 """
 Text processing utilities for the Shariaa Contract Analyzer.
-Consolidated from original utils.py and api_server.py
+Matches OldStrcturePerfectProject/utils.py and api_server.py exactly.
 """
 
 import re
 import uuid
+import json
 import logging
 from unidecode import unidecode
 
 logger = logging.getLogger(__name__)
+
 
 def clean_model_response(response_text: str | None) -> str:
     """
     Cleans the response text from the model, attempting to extract JSON
     content if it's wrapped in markdown code blocks or found directly.
     For contract text, removes unwanted analysis and commentary.
+    Matches OldStrcturePerfectProject/utils.py clean_model_response exactly.
     """
     if not isinstance(response_text, str):
         return ""
 
-    # Try to find JSON within ```json ... ```
     json_match = re.search(r"```json\s*([\s\S]*?)\s*```", response_text, re.DOTALL | re.IGNORECASE)
     if json_match:
         return json_match.group(1).strip()
 
-    # Try to find JSON within ``` ... ``` (generic code block)
     code_match = re.search(r"```\s*([\s\S]*?)\s*```", response_text, re.DOTALL)
     if code_match:
         content = code_match.group(1).strip()
-        # Check if the content looks like a JSON object or array
         if (content.startswith('{') and content.endswith('}')) or \
            (content.startswith('[') and content.endswith(']')):
             return content
 
-    # If no markdown blocks, try to find the first occurrence of '{' or '['
-    # and extract up to the matching '}' or ']'
-    if '{' in response_text:
-        start_idx = response_text.index('{')
-        bracket_count = 0
-        for i, char in enumerate(response_text[start_idx:], start_idx):
-            if char == '{':
-                bracket_count += 1
-            elif char == '}':
-                bracket_count -= 1
-                if bracket_count == 0:
-                    return response_text[start_idx:i+1]
-    
-    if '[' in response_text:
-        start_idx = response_text.index('[')
-        bracket_count = 0
-        for i, char in enumerate(response_text[start_idx:], start_idx):
-            if char == '[':
-                bracket_count += 1
-            elif char == ']':
-                bracket_count -= 1
-                if bracket_count == 0:
-                    return response_text[start_idx:i+1]
+    first_bracket = response_text.find("[")
+    first_curly = response_text.find("{")
 
-    # If nothing else works, return the original text
-    return response_text.strip()
+    start_index = -1
+    end_char = None
+
+    if first_bracket != -1 and (first_curly == -1 or first_bracket < first_curly):
+        start_index = first_bracket
+        end_char = "]"
+    elif first_curly != -1:
+        start_index = first_curly
+        end_char = "}"
+
+    if start_index != -1 and end_char:
+        open_braces = 0
+        last_index = -1
+        for i in range(start_index, len(response_text)):
+            if response_text[i] == ('[' if end_char == ']' else '{'):
+                open_braces += 1
+            elif response_text[i] == end_char:
+                open_braces -= 1
+                if open_braces == 0:
+                    last_index = i
+                    break
+        
+        if last_index > start_index:
+            potential_json = response_text[start_index : last_index + 1].strip()
+            try:
+                json.loads(potential_json)
+                return potential_json
+            except json.JSONDecodeError:
+                pass 
+
+    cleaned_text = response_text.strip()
+    
+    cleaned_text = re.sub(r'^```.*?\n', '', cleaned_text, flags=re.MULTILINE)
+    cleaned_text = re.sub(r'\n```$', '', cleaned_text)
+    
+    lines = cleaned_text.split('\n')
+    contract_lines = []
+    
+    for line in lines:
+        line = line.strip()
+        if not line:
+            contract_lines.append('')
+            continue
+            
+        if any(keyword in line.lower() for keyword in [
+            'تحليل:', 'ملاحظة:', 'تعليق:', 'analysis:', 'note:', 'comment:',
+            'يجب ملاحظة', 'من المهم', 'ينبغي الانتباه', 'it should be noted',
+            'it is important', 'please note', 'النتيجة:', 'result:', 'الخلاصة:'
+        ]):
+            continue
+            
+        if line.startswith(('تعليمات:', 'instructions:', 'metadata:', 'معلومات:')):
+            continue
+            
+        contract_lines.append(line)
+    
+    return '\n'.join(contract_lines).strip()
+
 
 def translate_arabic_to_english(arabic_text):
     """
     Translates Arabic contract names to English using simple transliteration.
     Falls back to generic name if translation fails.
+    Matches OldStrcturePerfectProject/api_server.py translate_arabic_to_english exactly.
     """
     try:
-        # Simple transliteration mapping for common Arabic words in contracts
         transliteration_map = {
             'عقد': 'contract',
             'بيع': 'sale',
@@ -85,26 +120,22 @@ def translate_arabic_to_english(arabic_text):
             'مبدئي': 'preliminary'
         }
 
-        # Clean and split the Arabic text
         words = arabic_text.strip().split()
         translated_words = []
 
         for word in words:
-            # Remove common Arabic articles and prepositions
             clean_word = word.replace('ال', '').replace('و', '').replace('في', '').replace('من', '')
 
-            # Look for direct translation
             translated = transliteration_map.get(clean_word.lower())
             if translated:
                 translated_words.append(translated)
             else:
-                # Fallback: use unidecode for transliteration
                 transliterated = unidecode(clean_word)
                 if transliterated and transliterated.strip():
                     translated_words.append(transliterated.lower())
 
         if translated_words:
-            result = '_'.join(translated_words)[:50]  # Limit length
+            result = '_'.join(translated_words)[:50]
             logger.info(f"Translated Arabic contract name '{arabic_text}' to '{result}'")
             return result
         else:
@@ -116,18 +147,21 @@ def translate_arabic_to_english(arabic_text):
         logger.error(f"Error translating Arabic contract name '{arabic_text}': {e}")
         return f"contract_{uuid.uuid4().hex[:8]}"
 
+
 def generate_safe_public_id(base_name, prefix="", max_length=50):
     """
     Generates a safe, short public_id for Cloudinary uploads.
     Handles Arabic names by translating them to English.
+    Matches OldStrcturePerfectProject/api_server.py generate_safe_public_id exactly.
     """
     try:
+        from app.utils.file_helpers import clean_filename
+        
         if not base_name:
             safe_id = f"{prefix}_{uuid.uuid4().hex[:8]}"
             logger.debug(f"Generated safe public_id for empty base_name: {safe_id}")
             return safe_id
 
-        # Detect if the name contains Arabic characters
         has_arabic = bool(re.search(r'[\u0600-\u06FF]', base_name))
 
         if has_arabic:
@@ -137,17 +171,14 @@ def generate_safe_public_id(base_name, prefix="", max_length=50):
         else:
             clean_name = clean_filename(base_name)
 
-        # Ensure the name is not too long
         if len(clean_name) > max_length:
             clean_name = clean_name[:max_length]
 
-        # Generate final public_id
         if prefix:
             safe_id = f"{prefix}_{clean_name}_{uuid.uuid4().hex[:6]}"
         else:
             safe_id = f"{clean_name}_{uuid.uuid4().hex[:6]}"
 
-        # Final safety check - remove any remaining problematic characters
         safe_id = re.sub(r'[^a-zA-Z0-9_-]', '_', safe_id)
 
         logger.debug(f"Generated safe public_id: {safe_id} from base_name: {base_name}")
