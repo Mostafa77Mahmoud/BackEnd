@@ -10,6 +10,24 @@ from app.utils.logging_utils import get_logger, mask_key
 
 logger = get_logger(__name__)
 
+FILE_SEARCH_AVAILABLE = hasattr(genai.Client, 'file_search_stores') if hasattr(genai, 'Client') else False
+
+def check_file_search_support():
+    """Check if File Search API is supported in the installed google-genai version."""
+    try:
+        import google.genai as genai_module
+        version = getattr(genai_module, '__version__', 'unknown')
+        logger.info(f"google-genai version: {version}")
+        
+        if not FILE_SEARCH_AVAILABLE:
+            logger.warning("File Search API not available in this version of google-genai")
+            logger.warning("Please upgrade: pip install --upgrade google-genai>=1.50.0")
+            return False
+        return True
+    except Exception as e:
+        logger.error(f"Error checking File Search support: {e}")
+        return False
+
 class FileSearchService:
     """
     Service for searching files using Google Gemini File Search API.
@@ -34,17 +52,30 @@ class FileSearchService:
 
     def __init__(self):
         """Initialize service with Gemini API connection."""
+        self.file_search_enabled = check_file_search_support()
+        
         self.api_key = current_app.config.get('GEMINI_FILE_SEARCH_API_KEY') or current_app.config.get('GEMINI_API_KEY')
         if not self.api_key:
             logger.error("GEMINI_FILE_SEARCH_API_KEY or GEMINI_API_KEY not found in config")
+            self.file_search_enabled = False
         
-        self.client = genai.Client(api_key=self.api_key)
+        self.client = None
+        if self.api_key:
+            try:
+                self.client = genai.Client(api_key=self.api_key)
+                logger.info(f"FileSearchService initialized using API Key: {mask_key(self.api_key)}")
+            except Exception as e:
+                logger.error(f"Failed to create GenAI client: {e}")
+                self.file_search_enabled = False
+        
         self.model_name = current_app.config.get('MODEL_NAME', 'gemini-2.5-flash')
         self.store_id: Optional[str] = current_app.config.get('FILE_SEARCH_STORE_ID')
-        self.context_dir = "context" # Assumes context dir is in root or we need absolute path
+        self.context_dir = "context"
         
-        logger.info(f"FileSearchService initialized using API Key: {mask_key(self.api_key)}")
         logger.info(f"Model: {self.model_name}")
+        logger.info(f"File Search Enabled: {self.file_search_enabled}")
+        if self.store_id:
+            logger.info(f"Store ID: {self.store_id}")
 
     @property
     def extract_prompt_template(self):
@@ -68,6 +99,14 @@ class FileSearchService:
         logger.info("="*60)
         logger.info("FILE SEARCH STORE INITIALIZATION")
         logger.info("="*60)
+
+        if not self.file_search_enabled:
+            logger.error("File Search API is not available")
+            raise ValueError("File Search API not available. Please upgrade google-genai>=1.50.0")
+        
+        if not self.client:
+            logger.error("GenAI client not initialized")
+            raise ValueError("GenAI client not initialized")
 
         # Check for existing Store ID
         if self.store_id:
