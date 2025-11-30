@@ -226,3 +226,44 @@ def extract_text_from_file(file_path: str) -> str | None:
         logger.error(f"General error during text extraction from file {file_path}: {e}")
         traceback.print_exc()
         return None
+
+def send_file_to_remote_api(file_path: str, session_id=None, output_language='ar'):
+    """
+    Send file to AI API for analysis.
+    Matches the interface of old remote_api.py send_file_to_remote_api function.
+    """
+    path_obj = pathlib.Path(file_path)
+    ext = path_obj.suffix.lower()
+
+    if ext not in [".pdf", ".txt"]:
+        logger.error(f"Unsupported file type in send_file_to_remote_api: {ext}")
+        return json.dumps({"error": "نوع ملف غير مدعوم"}), None
+
+    extracted_markdown = extract_text_from_file(file_path)
+
+    if extracted_markdown is None:
+         logger.error(f"Text extraction failed for file: {file_path}")
+         return json.dumps({"error": "فشل استخلاص النص من الملف"}), None
+    elif not extracted_markdown.strip():
+         logger.warning(f"Extracted text from file is empty: {file_path}")
+         return "[]", ""
+
+    try:
+        from config.default import DefaultConfig
+        config = DefaultConfig()
+        sys_prompt_template = config.SYS_PROMPT
+        
+        logger.info(f"Analyzing extracted content from file {file_path} for session: {session_id or 'default'}")
+        formatted_sys_prompt = sys_prompt_template.format(output_language=output_language)
+        
+        analysis_response_text = send_text_to_remote_api(
+            text_payload=extracted_markdown, 
+            session_id_key=f"{session_id}_analysis_file", 
+            formatted_system_prompt=formatted_sys_prompt
+        )
+        logger.info(f"Analysis complete for file {file_path}, session {session_id or 'default'}")
+        return analysis_response_text, extracted_markdown
+    except Exception as e:
+        logger.error(f"Analysis step failed after extraction for session {session_id or 'default'} for file {file_path}: {e}")
+        traceback.print_exc()
+        return json.dumps({"error": f"فشل استدعاء API للتحليل: {str(e)}"}), extracted_markdown
