@@ -37,6 +37,10 @@ class DefaultConfig:
     TEMP_PROCESSING_FOLDER = os.environ.get("TEMP_PROCESSING_FOLDER", "/tmp/shariaa_temp")
     PDF_PREVIEW_FOLDER = os.environ.get("PDF_PREVIEW_FOLDER", "/tmp/pdf_previews")
     
+    GEMINI_FILE_SEARCH_API_KEY = os.environ.get("GEMINI_FILE_SEARCH_API_KEY")
+    FILE_SEARCH_STORE_ID = os.environ.get("FILE_SEARCH_STORE_ID")
+    TOP_K_CHUNKS = int(os.environ.get("TOP_K_CHUNKS", "10"))
+    
     @staticmethod
     def _load_prompt(filename):
         """Load prompt from file in prompts/ directory"""

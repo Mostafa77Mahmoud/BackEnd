@@ -70,15 +70,23 @@ def create_app(config_name='default'):
 
 def configure_logging(app):
     """Configure application logging."""
-    if not app.debug and not app.testing:
-        logging.basicConfig(
-            level=logging.INFO,
-            format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-            handlers=[
-                logging.StreamHandler(),
-                logging.FileHandler('shariaa_analyzer.log', encoding='utf-8')
-            ]
-        )
+    log_level = logging.DEBUG if app.debug else logging.INFO
+    
+    logging.basicConfig(
+        level=log_level,
+        format='[%(asctime)s] [%(levelname)s] [%(name)s] %(message)s',
+        datefmt='%Y-%m-%d %H:%M:%S',
+        handlers=[
+            logging.StreamHandler()
+        ],
+        force=True
+    )
+    
+    logging.info("="*60)
+    logging.info("SHARIAA CONTRACT ANALYZER - STARTUP")
+    logging.info("="*60)
+    logging.info(f"Debug Mode: {app.debug}")
+    logging.info(f"Log Level: {'DEBUG' if app.debug else 'INFO'}")
 
 
 def register_blueprints(app):
