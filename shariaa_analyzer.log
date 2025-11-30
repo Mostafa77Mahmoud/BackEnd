@@ -408,3 +408,17 @@
 2025-11-30 12:47:14,722 - app.routes.analysis_upload - INFO - Analysis data is a list with 0 items
 2025-11-30 12:47:14,722 - app.routes.analysis_upload - WARNING - No terms found in analysis result
 2025-11-30 12:47:14,926 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 12:47:14] "POST /analyze HTTP/1.1" 200 -
+2025-11-30 13:05:44,195 - app.services.database - INFO - Attempting to connect to MongoDB...
+2025-11-30 13:05:46,096 - app.services.database - INFO - Successfully connected to MongoDB: shariaa_analyzer_db
+2025-11-30 13:05:46,156 - app.services.cloudinary_service - INFO - Cloudinary configured successfully
+2025-11-30 13:05:46,814 - app.services.ai_service - WARNING - GOOGLE_API_KEY/GEMINI_API_KEY not configured - AI services will be unavailable
+2025-11-30 13:05:46,885 - dotenv.main - WARNING - python-dotenv could not parse statement starting at line 8
+2025-11-30 13:05:46,962 - werkzeug - INFO - [31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
+ * Running on all addresses (0.0.0.0)
+ * Running on http://127.0.0.1:5000
+ * Running on http://172.31.73.162:5000
+2025-11-30 13:05:46,962 - werkzeug - INFO - [33mPress CTRL+C to quit[0m
+2025-11-30 13:05:47,719 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:05:47] "GET / HTTP/1.1" 200 -
+2025-11-30 13:05:48,003 - werkzeug - INFO - 172.31.73.162 - - [30/Nov/2025 13:05:48] "GET / HTTP/1.1" 200 -
+2025-11-30 13:05:56,311 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:05:56] "[33mGET /favicon.ico HTTP/1.1[0m" 404 -
+2025-11-30 13:06:06,546 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 13:06:06] "GET / HTTP/1.1" 200 -
