@@ -95,6 +95,16 @@ def analyze_contract():
             # Build structured text for analysis
             structured_text = build_structured_text_for_analysis(extracted_text)
             
+            # Detect contract language for output
+            from langdetect import detect
+            try:
+                detected_lang = detect(extracted_text[:1000])
+                output_language = "العربية" if detected_lang == "ar" else "English"
+                logger.info(f"Detected contract language: {detected_lang}, output_language: {output_language}")
+            except:
+                output_language = "العربية"
+                logger.info(f"Language detection failed, defaulting to Arabic")
+            
             # Save session to database first
             session_doc = {
                 "_id": session_id,
@@ -109,44 +119,90 @@ def analyze_contract():
             }
             contracts_collection.insert_one(session_doc)
             
-            # Perform actual analysis using AI service
+            # Perform actual analysis using AI service with file_search integration
             try:
                 from config.default import DefaultConfig
+                from app.services.file_search import FileSearchService
                 config = DefaultConfig()
                 
-                # Select appropriate prompt based on analysis type
-                # Select appropriate prompt based on analysis type
-                if analysis_type == "sharia":
-                    sys_prompt = config.SYS_PROMPT_SHARIA
-                # elif analysis_type == "legal":
-                #     sys_prompt = config.SYS_PROMPT_LEGAL 
-                else:
-                    sys_prompt = config.SYS_PROMPT_SHARIA  # Default to Sharia
-                
-                if sys_prompt and sys_prompt.startswith("ERROR:"):
-                    logger.error(f"Failed to load system prompt: {sys_prompt}")
-                    sys_prompt = ""
-                
-                if sys_prompt:
-                    # Send text for analysis
-                    analysis_result = send_text_to_remote_api(structured_text, system_prompt=sys_prompt)
+                # Step 1: Use file_search to get relevant AAOIFI context
+                aaoifi_context = ""
+                try:
+                    logger.info(f"Starting file search for session: {session_id}")
+                    file_search_service = FileSearchService()
+                    chunks, extracted_terms = file_search_service.search_chunks(structured_text)
                     
-                    if analysis_result:
+                    if chunks:
+                        logger.info(f"File search returned {len(chunks)} relevant AAOIFI chunks")
+                        aaoifi_chunks_text = []
+                        for chunk in chunks:
+                            chunk_text = chunk.get("chunk_text", "")
+                            if chunk_text:
+                                aaoifi_chunks_text.append(chunk_text)
+                        aaoifi_context = "\n\n---\n\n".join(aaoifi_chunks_text)
+                        logger.info(f"AAOIFI context length: {len(aaoifi_context)} characters")
+                    else:
+                        logger.warning("No AAOIFI chunks found from file search")
+                        aaoifi_context = "لا توجد مراجع AAOIFI متاحة حالياً"
+                except Exception as fs_error:
+                    logger.error(f"File search failed: {str(fs_error)}")
+                    aaoifi_context = "لا توجد مراجع AAOIFI متاحة حالياً"
+                
+                # Step 2: Select and format the system prompt
+                if analysis_type == "sharia":
+                    sys_prompt_template = config.SYS_PROMPT_SHARIA
+                else:
+                    sys_prompt_template = config.SYS_PROMPT_SHARIA  # Default to Sharia
+                
+                if sys_prompt_template and sys_prompt_template.startswith("ERROR:"):
+                    logger.error(f"Failed to load system prompt: {sys_prompt_template}")
+                    sys_prompt_template = ""
+                
+                if sys_prompt_template:
+                    # Format the prompt with output_language and aaoifi_context
+                    sys_prompt = sys_prompt_template.format(
+                        output_language=output_language,
+                        aaoifi_context=aaoifi_context
+                    )
+                    logger.info(f"Formatted system prompt length: {len(sys_prompt)} characters")
+                    
+                    # Send text for analysis
+                    analysis_result = send_text_to_remote_api(structured_text, session_id_key=f"{session_id}_analysis", formatted_system_prompt=sys_prompt)
+                    
+                    if analysis_result and not analysis_result.startswith("ERROR"):
                         # Parse and store analysis results
                         import json
+                        import re
                         try:
-                            analysis_data = json.loads(analysis_result)
-                            if isinstance(analysis_data, dict) and "terms" in analysis_data:
+                            # Clean up the response - extract JSON from possible markdown
+                            clean_result = analysis_result.strip()
+                            if clean_result.startswith("```"):
+                                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', clean_result)
+                                if json_match:
+                                    clean_result = json_match.group(1).strip()
+                            
+                            analysis_data = json.loads(clean_result)
+                            
+                            # Handle both list format and dict with "terms" key
+                            terms_list = []
+                            if isinstance(analysis_data, list):
+                                terms_list = analysis_data
+                            elif isinstance(analysis_data, dict) and "terms" in analysis_data:
+                                terms_list = analysis_data["terms"]
+                            
+                            if terms_list:
+                                logger.info(f"Parsed {len(terms_list)} terms from analysis result")
                                 # Store individual terms
-                                for term_data in analysis_data["terms"]:
+                                for term_data in terms_list:
                                     term_doc = {
                                         "session_id": session_id,
                                         "term_id": term_data.get("term_id"),
                                         "term_text": term_data.get("term_text"),
                                         "is_valid_sharia": term_data.get("is_valid_sharia", False),
-                                        "sharia_issue": term_data.get("sharia_issue", ""),
-                                        "modified_term": term_data.get("modified_term", ""),
-                                        "reference_number": term_data.get("reference_number", ""),
+                                        "sharia_issue": term_data.get("sharia_issue"),
+                                        "modified_term": term_data.get("modified_term"),
+                                        "reference_number": term_data.get("reference_number"),
+                                        "aaoifi_evidence": term_data.get("aaoifi_evidence"),
                                         "analyzed_at": datetime.datetime.now()
                                     }
                                     terms_collection.insert_one(term_doc)
@@ -156,12 +212,24 @@ def analyze_contract():
                                     {"_id": session_id},
                                     {"$set": {
                                         "status": "completed",
-                                        "analysis_result": analysis_data,
+                                        "analysis_result": {"terms": terms_list},
+                                        "terms_count": len(terms_list),
                                         "completed_at": datetime.datetime.now()
                                     }}
                                 )
-                        except json.JSONDecodeError:
-                            logger.warning("Failed to parse analysis result as JSON")
+                                logger.info(f"Analysis completed successfully with {len(terms_list)} terms for session: {session_id}")
+                            else:
+                                logger.warning("No terms found in analysis result")
+                                contracts_collection.update_one(
+                                    {"_id": session_id},
+                                    {"$set": {
+                                        "status": "completed",
+                                        "analysis_result": {"raw_response": analysis_result},
+                                        "completed_at": datetime.datetime.now()
+                                    }}
+                                )
+                        except json.JSONDecodeError as je:
+                            logger.warning(f"Failed to parse analysis result as JSON: {str(je)}")
                             # Store raw result
                             contracts_collection.update_one(
                                 {"_id": session_id},
@@ -172,16 +240,22 @@ def analyze_contract():
                                 }}
                             )
                     else:
-                        logger.warning("No analysis result from AI service")
+                        logger.warning(f"No valid analysis result from AI service: {analysis_result}")
                         contracts_collection.update_one(
                             {"_id": session_id},
-                            {"$set": {"status": "failed", "error": "AI service unavailable"}}
+                            {"$set": {"status": "failed", "error": analysis_result or "AI service unavailable"}}
                         )
                 else:
                     logger.warning("No system prompt configured for analysis")
+                    contracts_collection.update_one(
+                        {"_id": session_id},
+                        {"$set": {"status": "failed", "error": "No system prompt configured"}}
+                    )
                     
             except Exception as analysis_error:
                 logger.error(f"Error during analysis: {str(analysis_error)}")
+                import traceback
+                traceback.print_exc()
                 contracts_collection.update_one(
                     {"_id": session_id},
                     {"$set": {"status": "failed", "error": str(analysis_error)}}
@@ -209,6 +283,16 @@ def analyze_contract():
             # Build structured text for analysis
             structured_text = build_structured_text_for_analysis(text_content)
             
+            # Detect contract language for output
+            from langdetect import detect
+            try:
+                detected_lang = detect(text_content[:1000])
+                output_language = "العربية" if detected_lang == "ar" else "English"
+                logger.info(f"Detected contract language: {detected_lang}, output_language: {output_language}")
+            except:
+                output_language = "العربية"
+                logger.info(f"Language detection failed, defaulting to Arabic")
+            
             # Save session to database first
             session_doc = {
                 "_id": session_id,
@@ -223,44 +307,90 @@ def analyze_contract():
             }
             contracts_collection.insert_one(session_doc)
             
-            # Perform actual analysis using AI service
+            # Perform actual analysis using AI service with file_search integration
             try:
                 from config.default import DefaultConfig
+                from app.services.file_search import FileSearchService
                 config = DefaultConfig()
                 
-                # Select appropriate prompt based on analysis type
-                # Select appropriate prompt based on analysis type
-                if analysis_type == "sharia":
-                    sys_prompt = config.SYS_PROMPT_SHARIA
-                # elif analysis_type == "legal":
-                #     sys_prompt = config.SYS_PROMPT_LEGAL 
-                else:
-                    sys_prompt = config.SYS_PROMPT_SHARIA  # Default to Sharia
-                
-                if sys_prompt and sys_prompt.startswith("ERROR:"):
-                    logger.error(f"Failed to load system prompt: {sys_prompt}")
-                    sys_prompt = ""
-                
-                if sys_prompt:
-                    # Send text for analysis
-                    analysis_result = send_text_to_remote_api(structured_text, system_prompt=sys_prompt)
+                # Step 1: Use file_search to get relevant AAOIFI context
+                aaoifi_context = ""
+                try:
+                    logger.info(f"Starting file search for session: {session_id}")
+                    file_search_service = FileSearchService()
+                    chunks, extracted_terms = file_search_service.search_chunks(structured_text)
                     
-                    if analysis_result:
+                    if chunks:
+                        logger.info(f"File search returned {len(chunks)} relevant AAOIFI chunks")
+                        aaoifi_chunks_text = []
+                        for chunk in chunks:
+                            chunk_text = chunk.get("chunk_text", "")
+                            if chunk_text:
+                                aaoifi_chunks_text.append(chunk_text)
+                        aaoifi_context = "\n\n---\n\n".join(aaoifi_chunks_text)
+                        logger.info(f"AAOIFI context length: {len(aaoifi_context)} characters")
+                    else:
+                        logger.warning("No AAOIFI chunks found from file search")
+                        aaoifi_context = "لا توجد مراجع AAOIFI متاحة حالياً"
+                except Exception as fs_error:
+                    logger.error(f"File search failed: {str(fs_error)}")
+                    aaoifi_context = "لا توجد مراجع AAOIFI متاحة حالياً"
+                
+                # Step 2: Select and format the system prompt
+                if analysis_type == "sharia":
+                    sys_prompt_template = config.SYS_PROMPT_SHARIA
+                else:
+                    sys_prompt_template = config.SYS_PROMPT_SHARIA  # Default to Sharia
+                
+                if sys_prompt_template and sys_prompt_template.startswith("ERROR:"):
+                    logger.error(f"Failed to load system prompt: {sys_prompt_template}")
+                    sys_prompt_template = ""
+                
+                if sys_prompt_template:
+                    # Format the prompt with output_language and aaoifi_context
+                    sys_prompt = sys_prompt_template.format(
+                        output_language=output_language,
+                        aaoifi_context=aaoifi_context
+                    )
+                    logger.info(f"Formatted system prompt length: {len(sys_prompt)} characters")
+                    
+                    # Send text for analysis
+                    analysis_result = send_text_to_remote_api(structured_text, session_id_key=f"{session_id}_analysis", formatted_system_prompt=sys_prompt)
+                    
+                    if analysis_result and not analysis_result.startswith("ERROR"):
                         # Parse and store analysis results
                         import json
+                        import re
                         try:
-                            analysis_data = json.loads(analysis_result)
-                            if isinstance(analysis_data, dict) and "terms" in analysis_data:
+                            # Clean up the response - extract JSON from possible markdown
+                            clean_result = analysis_result.strip()
+                            if clean_result.startswith("```"):
+                                json_match = re.search(r'```(?:json)?\s*([\s\S]*?)\s*```', clean_result)
+                                if json_match:
+                                    clean_result = json_match.group(1).strip()
+                            
+                            analysis_data = json.loads(clean_result)
+                            
+                            # Handle both list format and dict with "terms" key
+                            terms_list = []
+                            if isinstance(analysis_data, list):
+                                terms_list = analysis_data
+                            elif isinstance(analysis_data, dict) and "terms" in analysis_data:
+                                terms_list = analysis_data["terms"]
+                            
+                            if terms_list:
+                                logger.info(f"Parsed {len(terms_list)} terms from analysis result")
                                 # Store individual terms
-                                for term_data in analysis_data["terms"]:
+                                for term_data in terms_list:
                                     term_doc = {
                                         "session_id": session_id,
                                         "term_id": term_data.get("term_id"),
                                         "term_text": term_data.get("term_text"),
                                         "is_valid_sharia": term_data.get("is_valid_sharia", False),
-                                        "sharia_issue": term_data.get("sharia_issue", ""),
-                                        "modified_term": term_data.get("modified_term", ""),
-                                        "reference_number": term_data.get("reference_number", ""),
+                                        "sharia_issue": term_data.get("sharia_issue"),
+                                        "modified_term": term_data.get("modified_term"),
+                                        "reference_number": term_data.get("reference_number"),
+                                        "aaoifi_evidence": term_data.get("aaoifi_evidence"),
                                         "analyzed_at": datetime.datetime.now()
                                     }
                                     terms_collection.insert_one(term_doc)
@@ -270,12 +400,24 @@ def analyze_contract():
                                     {"_id": session_id},
                                     {"$set": {
                                         "status": "completed",
-                                        "analysis_result": analysis_data,
+                                        "analysis_result": {"terms": terms_list},
+                                        "terms_count": len(terms_list),
                                         "completed_at": datetime.datetime.now()
                                     }}
                                 )
-                        except json.JSONDecodeError:
-                            logger.warning("Failed to parse analysis result as JSON")
+                                logger.info(f"Text analysis completed successfully with {len(terms_list)} terms for session: {session_id}")
+                            else:
+                                logger.warning("No terms found in analysis result")
+                                contracts_collection.update_one(
+                                    {"_id": session_id},
+                                    {"$set": {
+                                        "status": "completed",
+                                        "analysis_result": {"raw_response": analysis_result},
+                                        "completed_at": datetime.datetime.now()
+                                    }}
+                                )
+                        except json.JSONDecodeError as je:
+                            logger.warning(f"Failed to parse analysis result as JSON: {str(je)}")
                             # Store raw result
                             contracts_collection.update_one(
                                 {"_id": session_id},
@@ -286,10 +428,10 @@ def analyze_contract():
                                 }}
                             )
                     else:
-                        logger.warning("No analysis result from AI service")
+                        logger.warning(f"No valid analysis result from AI service: {analysis_result}")
                         contracts_collection.update_one(
                             {"_id": session_id},
-                            {"$set": {"status": "failed", "error": "AI service unavailable"}}
+                            {"$set": {"status": "failed", "error": analysis_result or "AI service unavailable"}}
                         )
                 else:
                     logger.warning("No system prompt configured for analysis")
@@ -300,6 +442,8 @@ def analyze_contract():
                     
             except Exception as analysis_error:
                 logger.error(f"Error during text analysis: {str(analysis_error)}")
+                import traceback
+                traceback.print_exc()
                 contracts_collection.update_one(
                     {"_id": session_id},
                     {"$set": {"status": "failed", "error": str(analysis_error)}}

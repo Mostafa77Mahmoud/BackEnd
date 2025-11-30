@@ -1,0 +1,48 @@
+انظر عندما ارفع ملف يحدث
+2025-11-30 14:01:13,425 - werkzeug - INFO - Press CTRL+C to quit
+2025-11-30 14:01:16,932 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:01:16] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 14:01:18,943 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:01:18] "OPTIONS /analyze HTTP/1.1" 200 -
+
+                                                                                                                                                                                                                     14:01:18.942 EET OPTIONS /analyze               200 OK                                                                                                                                                               14:01:16.929 EET OPTIONS /analyze               200 OK        
+فقط ثم اري 
+Analysis Failed: Failed to fetch في الواجهه 
+بينما عندما يعمل ال backend بشكل صحيح من المفترض ان يحدث
+14:03:48.545 EET GET     /session/ca760fed-08af-413f-8335-c47b9d720569 200 OK                                                                                                                                        14:03:48.404 EET OPTIONS /session/ca760fed-08af-413f-8335-c47b9d720569 200 OK                                                                                                                                        14:03:48.545 EET GET     /terms/ca760fed-08af-413f-8335-c47b9d720569   200 OK                                                                                                                                        14:03:48.404 EET OPTIONS /terms/ca760fed-08af-413f-8335-c47b9d720569   200 OK                                                                                                                                        14:02:35.360 EET OPTIONS /analyze                                      200 OK                                                                                                                                        14:02:35.624 EET POST    /analyze                                      200 OK    
+2025-11-30 14:02:35,033 - werkzeug - INFO - Press CTRL+C to quit
+2025-11-30 14:02:35,388 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:02:35] "OPTIONS /analyze HTTP/1.1" 200 -
+2025-11-30 14:02:35,629 - __main__ - INFO - Starting file analysis for session: ca760fed-08af-413f-8335-c47b9d720569
+2025-11-30 14:02:35,900 - __main__ - INFO - Processing file: nmwdhj_qd_lmqwl.pdf for session: ca760fed-08af-413f-8335-c47b9d720569
+2025-11-30 14:02:39,177 - __main__ - INFO - Original file uploaded to Cloudinary: https://res.cloudinary.com/dr6jicgld/image/upload/v1764504159/shariaa_analyzer_uploads/ca760fed-08af-413f-8335-c47b9d720569/original_contracts/original_nmwdhj_qd_lmqwl_4bbb03.pdf
+Attempting to download from URL: https://res.cloudinary.com/dr6jicgld/image/upload/v1764504159/shariaa_analyzer_uploads/ca760fed-08af-413f-8335-c47b9d720569/original_contracts/original_nmwdhj_qd_lmqwl_4bbb03.pdf
+File successfully downloaded to temporary path: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpanz8ogvf.pdf
+2025-11-30 14:02:40,009 - __main__ - INFO - Processing file with extension: .pdf
+2025-11-30 14:02:40,009 - __main__ - INFO - Processing .PDF file
+2025-11-30 14:02:40,010 - remote_api - INFO - Extracting text from file: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpanz8ogvf.pdf
+2025-11-30 14:02:58,668 - remote_api - INFO - Successfully extracted text from C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpanz8ogvf.pdf. Text length: 9398    
+2025-11-30 14:02:58,673 - __main__ - INFO - Extracted 9396 characters from .PDF
+2025-11-30 14:02:59,527 - __main__ - INFO - Detected contract language: ar
+2025-11-30 14:02:59,527 - __main__ - INFO - Sending contract to LLM for analysis
+2025-11-30 14:02:59,527 - remote_api - INFO - Sending text to LLM for session: ca760fed-08af-413f-8335-c47b9d720569_analysis_final, payload length: 9398
+2025-11-30 14:02:59,527 - remote_api - INFO - Creating new chat session for key: ca760fed-08af-413f-8335-c47b9d720569_analysis_final
+2025-11-30 14:03:46,962 - remote_api - INFO - Received successful response for session ca760fed-08af-413f-8335-c47b9d720569_analysis_final. Response text length: 15286
+2025-11-30 14:03:46,963 - __main__ - INFO - Parsing LLM analysis results
+2025-11-30 14:03:46,965 - __main__ - INFO - Analysis completed with 18 terms identified
+DEBUG: Attempting to upload to Cloudinary. File: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmp8v85d2ou.json, Options: {'folder': 'shariaa_analyzer_uploads/ca760fed-08af-413f-8335-c47b9d720569/analysis_results_json', 'public_id': 'analysis_results_nmwdhj_qd_lmqwl_3033e2', 'resource_type': 'raw', 'overwrite': True}
+DEBUG: Raw Cloudinary upload_result for C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmp8v85d2ou.json: {'asset_id': 'bb7096d0e708d8baed75f5c91804aa19', 'public_id': 'shariaa_analyzer_uploads/ca760fed-08af-413f-8335-c47b9d720569/analysis_results_json/analysis_results_nmwdhj_qd_lmqwl_3033e2.json', 'version': 1764504227, 'version_id': '3951d3767a5f37aaef866b8d25fd1e7e', 'signature': '3bbb4ef8cd8e6385616e588c7c64aa5cac24a48b', 'resource_type': 'raw', 'created_at': '2025-11-30T12:03:47Z', 'tags': [], 'bytes': 24858, 'type': 'upload', 'etag': 'adbff614455f5b63a94e49f0970fe0ca', 'placeholder': False, 'url': 'http://res.cloudinary.com/dr6jicgld/raw/upload/v1764504227/shariaa_analyzer_uploads/ca760fed-08af-413f-8335-c47b9d720569/analysis_results_json/analysis_results_nmwdhj_qd_lmqwl_3033e2.json', 'secure_url': 'https://res.cloudinary.com/dr6jicgld/raw/upload/v1764504227/shariaa_analyzer_uploads/ca760fed-08af-413f-8335-c47b9d720569/analysis_results_json/analysis_results_nmwdhj_qd_lmqwl_3033e2.json', 'asset_folder': 'shariaa_analyzer_uploads/ca760fed-08af-413f-8335-c47b9d720569/analysis_results_json', 'display_name': 'analysis_results_nmwdhj_qd_lmqwl_3033e2.json', 'original_filename': 'tmp8v85d2ou', 'api_key': '961637465179968'}
+Cloudinary upload successful. URL: https://res.cloudinary.com/dr6jicgld/raw/upload/v1764504227/shariaa_analyzer_uploads/ca760fed-08af-413f-8335-c47b9d720569/analysis_results_json/analysis_results_nmwdhj_qd_lmqwl_3033e2.json
+2025-11-30 14:03:47,590 - __main__ - INFO - Analysis results uploaded to Cloudinary
+2025-11-30 14:03:47,878 - __main__ - INFO - Contract document saved to database for session: ca760fed-08af-413f-8335-c47b9d720569
+2025-11-30 14:03:48,029 - __main__ - INFO - Inserted 18 terms to database
+2025-11-30 14:03:48,030 - __main__ - INFO - Analysis completed successfully for session: ca760fed-08af-413f-8335-c47b9d720569
+2025-11-30 14:03:48,033 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:03:48] "POST /analyze HTTP/1.1" 200 -
+2025-11-30 14:03:48,405 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:03:48] "OPTIONS /terms/ca760fed-08af-413f-8335-c47b9d720569 HTTP/1.1" 200 -
+2025-11-30 14:03:48,407 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:03:48] "OPTIONS /session/ca760fed-08af-413f-8335-c47b9d720569 HTTP/1.1" 200 -
+2025-11-30 14:03:48,547 - __main__ - INFO - Fetching terms for session: ca760fed-08af-413f-8335-c47b9d720569
+2025-11-30 14:03:48,549 - __main__ - INFO - Fetching session details for: ca760fed-08af-413f-8335-c47b9d720569
+2025-11-30 14:03:48,808 - __main__ - INFO - Retrieved 18 terms for session: ca760fed-08af-413f-8335-c47b9d720569
+2025-11-30 14:03:48,811 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:03:48] "GET /terms/ca760fed-08af-413f-8335-c47b9d720569 HTTP/1.1" 200 -
+2025-11-30 14:03:49,797 - __main__ - INFO - Session details retrieved for: ca760fed-08af-413f-8335-c47b9d720569
+2025-11-30 14:03:49,800 - werkzeug - INFO - 127.0.0.1 - - [30/Nov/2025 14:03:49] "GET /session/ca760fed-08af-413f-8335-c47b9d720569 HTTP/1.1" 200 -
+
+
+مع مراعاة ان المشروع حاليا من المفترض ان يمر علي ميزة file search اثناء التحليل لذلك راجع سبب المشكلة وقم بحلة وجع المشروع مثالي
