@@ -178,14 +178,42 @@ def analyze_file():
         if not sys_prompt:
             logger.error("System prompt not loaded - check prompts/ directory")
             raise ValueError("System prompt configuration error.")
-        formatted_sys_prompt = sys_prompt.format(output_language=detected_lang)
+        
+        # Retrieve AAOIFI context via file search
+        aaoifi_context = ""
+        try:
+            logger.info("Retrieving AAOIFI standards context...")
+            from app.services.file_search import FileSearchService
+            file_search_service = FileSearchService()
+            aaoifi_chunks, extracted_terms = file_search_service.search_chunks(analysis_input_text, top_k=10)
+            
+            if aaoifi_chunks:
+                logger.info(f"Retrieved {len(aaoifi_chunks)} AAOIFI chunks")
+                chunk_texts = []
+                for idx, chunk in enumerate(aaoifi_chunks, 1):
+                    chunk_text = chunk.get("chunk_text", "")
+                    if chunk_text:
+                        chunk_texts.append(f"[معيار AAOIFI {idx}]\n{chunk_text}")
+                aaoifi_context = "\n\n".join(chunk_texts) if chunk_texts else ""
+                logger.info(f"AAOIFI context prepared: {len(aaoifi_context)} characters")
+            else:
+                logger.warning("No AAOIFI chunks retrieved, proceeding without context")
+        except Exception as e:
+            logger.warning(f"File search failed, proceeding without AAOIFI context: {e}")
+            aaoifi_context = ""
+        
+        # Format system prompt with output language and AAOIFI context
+        formatted_sys_prompt = sys_prompt.format(
+            output_language=detected_lang,
+            aaoifi_context=aaoifi_context
+        )
         
         if not analysis_input_text or not analysis_input_text.strip():
             logger.error("Analysis input text is empty")
             raise ValueError("Analysis input text is empty.")
 
         # Send to AI for analysis
-        logger.info("Sending contract to LLM for analysis")
+        logger.info("Sending contract to LLM for analysis with AAOIFI context")
         external_response_text = send_text_to_remote_api(
             analysis_input_text, 
             f"{session_id_local}_analysis_final", 
