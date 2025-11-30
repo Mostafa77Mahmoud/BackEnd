@@ -9,10 +9,14 @@ def register_root_routes(app):
             "message": "Sharia Contract Analyzer API",
             "version": "1.0",
             "endpoints": {
-                "analysis": "/api/analyze",
-                "interaction": "/api/interact",
-                "file_search": "/api/file_search/*",
-                "health": "/api/file_search/health"
+                "analysis": "/analyze",
+                "interaction": "/interact",
+                "review_modification": "/review_modification",
+                "confirm_modification": "/confirm_modification",
+                "generation": "/generate_modified_contract",
+                "expert_feedback": "/feedback/expert",
+                "file_search": "/file_search/*",
+                "health": "/health"
             }
         })
     
