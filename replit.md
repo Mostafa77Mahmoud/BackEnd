@@ -114,22 +114,20 @@ Server runs on port 5000.
 
 ## Recent Updates
 
-### November 30, 2025 - Backend Realignment with Old Working Version
-- Fixed AI service to work with new google-genai SDK
-- Updated prompts to remove incompatible placeholders (only {output_language} needed)
-- Rewrote /analyze endpoint to match old api_server.py response format exactly
-- Added /api/stats/user and /api/history endpoints
-- Fixed document processing to use build_structured_text_for_analysis properly
-- Updated cloudinary service with upload_to_cloudinary_helper function
-- Session cookies now properly set on analyze response
-- All endpoints now return response format expected by frontend
+### November 30, 2025 - Complete Migration from Old Backend
+- **document_processor.py**: Complete dict-based fallback with table handling, signature blocks for Arabic/English, convert_docx_to_pdf with 180s timeout and LibreOffice support
+- **cloudinary_service.py**: Full upload_to_cloudinary_helper with PDF-specific access_mode="public" and debug logging
+- **file_helpers.py**: download_file_from_url with tempfile.NamedTemporaryFile and 120s timeout
+- **text_processing.py**: Full JSON extraction with balanced bracket counting, translate_arabic_to_english, generate_safe_public_id
+- **generation.py routes**: Added /preview_contract, /download_pdf_preview, enhanced /generate_modified_contract with TXT generation and smart reconstruction, /generate_marked_contract with smart_sort_key
+- **config/default.py**: Complete prompts matching old config.py (EXTRACTION_PROMPT, SYS_PROMPT, INTERACTION_PROMPT, REVIEW_MODIFICATION_PROMPT, CONTRACT_REGENERATION_PROMPT)
+- All configuration values properly accessed via current_app.config.get()
 
-### Previous Updates
-- Fixed AI service function signatures
-- Integrated file search for AAOIFI context
-- Added language detection for output formatting
-- Improved JSON parsing for AI responses
-- Created proper .gitignore for security
+### Earlier - Backend Realignment
+- Fixed AI service to work with new google-genai SDK
+- Rewrote /analyze endpoint to match old api_server.py response format
+- Added /api/stats/user and /api/history endpoints
+- Session cookies properly set on analyze response
 
 ## Architecture Notes
 
