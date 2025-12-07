@@ -1,0 +1,177 @@
+شوف السجلات 
+ delete mode 100644 attached_assets/Pasted-2025-11-30-18-16-33-INFO-app-routes-PS C:\Users\Mostafa\Downloads\BackEnd (Restrycterd+newENdPoints)\BackEnd> python run.py       
+[2025-12-07 17:15:16] [INFO] [root] ==================================================
+[2025-12-07 17:15:16] [INFO] [root] SHARIAA CONTRACT ANALYZER - STARTUP
+[2025-12-07 17:15:16] [INFO] [root] ==================================================
+[2025-12-07 17:15:16] [INFO] [root] Debug Mode: True
+[2025-12-07 17:15:16] [INFO] [app.services.database] Attempting to connect to MongoDB...
+[2025-12-07 17:15:17] [INFO] [app.services.database] Successfully connected to MongoDB: shariaa_analyzer_db
+[2025-12-07 17:15:18] [INFO] [app.services.cloudinary_service] Cloudinary configured successfully
+[2025-12-07 17:15:19] [INFO] [app.services.ai_service] GEMINI_API_KEY configured: AIzaSyAK...5NAk
+[2025-12-07 17:15:19] [INFO] [app.services.ai_service] GEMINI_FILE_SEARCH_API_KEY configured: AIzaSyAM...O7vg
+[2025-12-07 17:15:19] [INFO] [app.services.ai_service] Google GenAI service initialized (client will be created per request)
+ * Serving Flask app 'app'
+ * Debug mode: on
+[2025-12-07 17:15:42] [INFO] [ROUTE] [01868657] Starting analysis for session: 0a2695c9-8699-4c26-9bd6-d2b948d415c1
+[2025-12-07 17:15:44] [INFO] [ROUTE] [01868657] Processing: Document_51.pdf
+[2025-12-07 17:15:44] [DEBUG] [app.utils.text_processing] Generated safe public_id: original_Document_51_74a778 from base_name: Document_51
+[2025-12-07 17:15:47] [INFO] [ROUTE] [01868657] Uploaded to Cloudinary (1693927 bytes)
+Attempting to download from URL: https://res.cloudinary.com/dr6jicgld/image/upload/v1765120547/shariaa_analyzer_uploads/0a2695c9-8699-4c26-9bd6-d2b948d415c1/original_contracts/original_Document_51_74a778.pdf
+File successfully downloaded to temporary path: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmp5glfvzar.pdf
+[2025-12-07 17:15:48] [DEBUG] [ROUTE] [01868657] Extension: .pdf
+[2025-12-07 17:15:48] [INFO] [ROUTE] [01868657] Processing .PDF
+[2025-12-07 17:15:48] [INFO] [app.services.ai_service] Extracting text from file: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmp5glfvzar.pdf
+[2025-12-07 17:15:48] [INFO] [app.services.ai_service] Creating GenAI client with API Key: AIzaSyAK...5NAk
+[2025-12-07 17:15:48] [WARNING] [google_genai._api_client] Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+[2025-12-07 17:16:07] [INFO] [app.services.ai_service] Token usage for file extraction C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmp5glfvzar.pdf: input=2117, output=2241, total=5213
+[2025-12-07 17:16:07] [INFO] [app.services.ai_service] Successfully extracted text from C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmp5glfvzar.pdf. Text length: 6733
+[2025-12-07 17:16:07] [INFO] [ROUTE] [01868657] Extracted 6689 chars from .PDF 
+[2025-12-07 17:16:07] [DEBUG] [ROUTE] [01868657] Language: ar
+[2025-12-07 17:16:07] [INFO] [ROUTE] [01868657] Starting AAOIFI context retrieval
+[2025-12-07 17:16:07] [DEBUG] [FILE_SEARCH] [01868657] google-genai version: 1.52.0
+[2025-12-07 17:16:07] [WARNING] [google_genai._api_client] Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+[2025-12-07 17:16:08] [INFO] [FILE_SEARCH] [01868657] File Search initialized with dedicated API Key: ****O7vg
+[2025-12-07 17:16:08] [DEBUG] [FILE_SEARCH] [01868657] Model: gemini-2.5-flash, Store ID: fileSearchStores/aaoifi-reference-store-3rerps28a9vx
+[2025-12-07 17:16:08] [INFO] [FILE_SEARCH] [01868657] ==================================================
+[2025-12-07 17:16:08] [INFO] [FILE_SEARCH] [01868657] FILE SEARCH PIPELINE START
+[2025-12-07 17:16:08] [INFO] [FILE_SEARCH] [01868657] ==================================================
+[2025-12-07 17:16:08] [INFO] [FILE_SEARCH] [01868657] STEP 1: Term Extraction  
+[2025-12-07 17:16:08] [DEBUG] [FILE_SEARCH] [01868657] Contract length: 6733 chars
+[2025-12-07 17:16:08] [DEBUG] [FILE_SEARCH] [01868657] Prompt formatted successfully
+[2025-12-07 17:16:08] [DEBUG] [FILE_SEARCH] [01868657] Calling Gemini API for extraction...
+[2025-12-07 17:16:51] [DEBUG] [FILE_SEARCH] [01868657] Response length: 8048 chars
+[2025-12-07 17:16:51] [INFO] [FILE_SEARCH] [01868657] Extracted 9 valid terms  
+[2025-12-07 17:16:51] [INFO] [FILE_SEARCH] [01868657] STEP 2: General Search   
+[2025-12-07 17:16:51] [DEBUG] [FILE_SEARCH] [01868657] Using top_k=10
+[2025-12-07 17:16:51] [DEBUG] [FILE_SEARCH] [01868657] Querying Gemini File Search...
+[2025-12-07 17:17:09] [INFO] [FILE_SEARCH] [01868657] General search: 10 chunks
+[2025-12-07 17:17:09] [INFO] [FILE_SEARCH] [01868657] STEP 3: Sensitive Search (4 clauses)
+[2025-12-07 17:17:09] [DEBUG] [FILE_SEARCH] [01868657] Processing: clause_preamble
+[2025-12-07 17:17:09] [DEBUG] [FILE_SEARCH] [01868657] Processing: clause_2
+[2025-12-07 17:17:09] [DEBUG] [FILE_SEARCH] [01868657] Processing: clause_6
+[2025-12-07 17:17:09] [DEBUG] [FILE_SEARCH] [01868657] Processing: clause_11
+[2025-12-07 17:17:09] [INFO] [FILE_SEARCH] [01868657] STEP 4: Merging Results
+[2025-12-07 17:17:09] [INFO] [FILE_SEARCH] [01868657] Total unique chunks: 10  
+[2025-12-07 17:17:09] [INFO] [FILE_SEARCH] [01868657] Pipeline time: 61.33s    
+[2025-12-07 17:17:09] [INFO] [FILE_SEARCH] [01868657] ==================================================
+[2025-12-07 17:17:09] [INFO] [FILE_SEARCH] [01868657] FILE SEARCH PIPELINE COMPLETE
+[2025-12-07 17:17:09] [INFO] [FILE_SEARCH] [01868657] ==================================================
+[2025-12-07 17:17:09] [INFO] [ROUTE] [01868657] Retrieved 10 chunks
+[2025-12-07 17:17:09] [INFO] [ROUTE] [01868657] Context size: 10371 chars      
+[2025-12-07 17:17:09] [INFO] [ROUTE] [01868657] Sending to LLM for analysis    
+[2025-12-07 17:17:09] [INFO] [app.services.ai_service] Sending text to LLM for session: 0a2695c9-8699-4c26-9bd6-d2b948d415c1_analysis_final, payload length: 6733
+[2025-12-07 17:17:09] [INFO] [app.services.ai_service] Creating new chat session for key: 0a2695c9-8699-4c26-9bd6-d2b948d415c1_analysis_final
+[2025-12-07 17:17:09] [INFO] [app.services.ai_service] Creating GenAI client with API Key: AIzaSyAK...5NAk
+[2025-12-07 17:17:09] [WARNING] [google_genai._api_client] Both GOOGLE_API_KEY and GEMINI_API_KEY are set. Using GOOGLE_API_KEY.
+[2025-12-07 17:17:11] [INFO] [app.services.ai_service] Sending request to AI API (attempt 1/3)
+[2025-12-07 17:17:41] [INFO] [app.services.ai_service] Token usage for session 0a2695c9-8699-4c26-9bd6-d2b948d415c1_analysis_final: input=7294, output=3011, total=13814
+[2025-12-07 17:17:41] [INFO] [app.services.ai_service] Received successful response for session 0a2695c9-8699-4c26-9bd6-d2b948d415c1_analysis_final. Response text length: 8612
+[2025-12-07 17:17:41] [INFO] [ROUTE] [01868657] Parsing analysis results       
+[2025-12-07 17:17:41] [INFO] [ROUTE] [01868657] Analysis complete: 13 terms    
+[2025-12-07 17:17:41] [DEBUG] [app.utils.text_processing] Generated safe public_id: analysis_results_Document_51_3f3c3d from base_name: Document_51
+[2025-12-07 17:17:41] [DEBUG] [app.services.cloudinary_service] DEBUG: Attempting to upload to Cloudinary. File: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpru1naekm.json, Options: {'folder': 'shariaa_analyzer_uploads/0a2695c9-8699-4c26-9bd6-d2b948d415c1/analysis_results_json', 'public_id': 'analysis_results_Document_51_3f3c3d', 'resource_type': 'raw', 'overwrite': True}
+[2025-12-07 17:17:42] [DEBUG] [app.services.cloudinary_service] DEBUG: Raw Cloudinary upload_result for C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpru1naekm.json: {'asset_id': '7cc382f8c0fbba9244df588249cb3ddd', 'public_id': 'shariaa_analyzer_uploads/0a2695c9-8699-4c26-9bd6-d2b948d415c1/analysis_results_json/analysis_results_Document_51_3f3c3d.json', 'version': 1765120662, 'version_id': '26366baa4946a1ac72a0d6b290e5f591', 'signature': 'fd6b95468068f22521f3e9bfd45c1801aceccb5e', 'resource_type': 'raw', 'created_at': '2025-12-07T15:17:42Z', 'tags': [], 'bytes': 13635, 'type': 'upload', 'etag': '03aa99fa9ea00d360776bc88932f2651', 'placeholder': False, 'url': 'http://res.cloudinary.com/dr6jicgld/raw/upload/v1765120662/shariaa_analyzer_uploads/0a2695c9-8699-4c26-9bd6-d2b948d415c1/analysis_results_json/analysis_results_Document_51_3f3c3d.json', 'secure_url': 'https://res.cloudinary.com/dr6jicgld/raw/upload/v1765120662/shariaa_analyzer_uploads/0a2695c9-8699-4c26-9bd6-d2b948d415c1/analysis_results_json/analysis_results_Document_51_3f3c3d.json', 'asset_folder': 'shariaa_analyzer_uploads/0a2695c9-8699-4c26-9bd6-d2b948d415c1/analysis_results_json', 'display_name': 'analysis_results_Document_51_3f3c3d.json', 'original_filename': 'tmpru1naekm', 'api_key': '961637465179968'}
+[2025-12-07 17:17:42] [INFO] [app.services.cloudinary_service] Cloudinary upload successful. URL: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765120662/shariaa_analyzer_uploads/0a2695c9-8699-4c26-9bd6-d2b948d415c1/analysis_results_json/analysis_results_Document_51_3f3c3d.json
+[2025-12-07 17:17:42] [DEBUG] [ROUTE] [01868657] Results uploaded to Cloudinary
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] Saved to database: 0a2695c9-8699-4c26-9bd6-d2b948d415c1
+[2025-12-07 17:17:42] [DEBUG] [ROUTE] [01868657] Inserted 13 terms
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] ==================================================
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] REQUEST SUMMARY
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] ==================================================
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] Trace ID: 01868657
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] File Size: 1693927 bytes       
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] Extracted Characters: 6689     
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] Analysis Status: success       
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] File Search Status: success    
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] Total Time: 120.05 seconds     
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] Step Times:
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657]   - initialization: 1.5s       
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657]   - upload: 4.41s
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657]   - text_extraction: 18.57s    
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657]   - file_search: 62.39s        
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657]   - ai_analysis: 31.97s        
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657]   - save_results: 0.92s        
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] ==================================================
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] Trace saved: traces\trace_01868657_20251207_171542.json
+[2025-12-07 17:17:42] [INFO] [ROUTE] [01868657] Analysis successful: 0a2695c9-8699-4c26-9bd6-d2b948d415c1
+[2025-12-07 17:17:42] [DEBUG] [ROUTE] [01868657] Cleaned temp processing file  
+[2025-12-07 17:17:42] [DEBUG] [ROUTE] [01868657] Cleaned temp analysis file    
+[2025-12-07 17:17:43] [INFO] [app.routes.analysis_terms] Retrieving terms for session: 0a2695c9-8699-4c26-9bd6-d2b948d415c1
+[2025-12-07 17:17:43] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: 0a2695c9-8699-4c26-9bd6-d2b948d415c1
+المشاكل الي واجهتني 
+1-انا عايز فملفات الي بتتخزن في traces يبقي في حاجة واحدة بس تدل علي عدد التوكنز الي دخلت كاملة خلال التحليل كامل من اول ما الجلسة تتفتح لحد ما تتقفل وعدد التوكنز الخارجة فنفس السيشن 
+2- هل فعلا ال file search بيستخدم ال api key الخاص بيه الي هو فلملف .env GEMINI_FILE_SEARCH_API_KEY
+ولا بيستخدم نفس الapi key بتاع التحليل وباقي الخطوات 
+من المفترض ان يكون ل file search ال api key الخاص به كما ذكرت حيث لا يحدث طلبات كثيرة علي نفس المفتاح فيحدث اخطاء من gemini 
+3-يجب تحسين الprompts لان التحليل لم يعد دقيق مثل السابق حيث ان الرد 
+غير مثالي 
+فمثلا نيتجة التحليل الحالية لاحد البنود 
+              {
+                "term_id": "clause_11",
+                "term_text": "أتفق الطرفان علي شرط جزائي قدره ٢٠٠٠٠٠ ( مائتي ألف جنيه مصرى فقط لا غير) يدفعها الطرف المخل الى المتضرر في حاله الاخلال بأي بند من بنود العقد يكون جزاء الإخلال وهذا الشرط نهائي وغير خاضع لتقدير المحكمة .",
+                "is_valid_sharia": false,
+                "sharia_issue": "الشرط الجزائي المحدد بمبلغ ثابت وغير خاضع لتقدير المحكمة في حال الإخلال بأي بند من بنود العقد، بما في ذلك التأخر في سداد الأقساط، قد يعد من الغرر أو الربا إذا تجاوز الضرر الفعلي أو كان غرامة على التأخير في سداد الدين، وهو ما لا يجوز شرعاً. يجب أن يكون التعويض عن الضرر الفعلي المثبت.",
+                "reference_number": "AAOIFI Standard 1 (مستند فساد العقد المشتمل على غرر في مقدار محل العقد اجماع الفقهاء على عدم صحة مجهول القدر سواء مقدار المبيع أو مقدار الثمن)",
+                "modified_term": "أتفق الطرفان علي شرط جزائي يدفعه الطرف المخل إلى المتضرر في حاله الإخلال بأي بند من بنود العقد، على أن يكون هذا الشرط تعويضاً عن الضرر الفعلي المثبت، ويخضع لتقدير المحكمة المختصة."
+              },
+وكما يظهر ان reference_number غير دقيق بالمرة وحتي التحليل ككل ليس دقيق يجب ان يكون 
+"reference_number": "المعيار الشرعي رقم (3) المدين المماطل، البند ٢/١/٢",
+وهذا البرومبت الذي كان يستخدم 
+بص انا عايز نفس البرومبت دا 
+أنت مستشار شرعي خبير متخصص في تحليل العقود وفقًا لمعايير AAOIFI.
+مهمتك تحليل العقد وتحديد مدى توافقه مع الشريعة الإسلامية.
+**لغة الإخراج المطلوبة للتحليل والاقتراحات والمراجع والنقاشات يجب أن تكون: {output_language}**
+
+المدخلات: نص العقد (قد يحتوي على معرفات `[[ID:...]]` أو يكون Markdown).
+
+قواعد التحليل واستخراج البنود:
+1.   التركيز على البنود الموضوعية: استخرج وحلل (فقط) البنود الرئيسية التي تحتوي على شروط، التزامات، حقوق، أو أحكام تعاقدية فعلية بما في ذلك البنود القانونية، البنود المالية، أو البنود المتعلقة بالضمانات والتمهيد.
+2.  تجاهل الأجزاء غير الموضوعية: تجاهل الديباجة، تعريف الأطراف، العناوين العامة، التواريخ، أرقام الصفحات، الترويسات والتذييلات، وما لم يكن جزءاً من نص بند موضوعي.
+3.  التجميع: قم بتجميع الفقرات أو الأجزاء النصية التي تشكل وحدة موضوعية واحدة (بنداً واحداً).
+4.  معرف البند (term_id):
+    *   **إذا كان النص المُدخل للبند يحتوي على معرف مُسبق مثل `[[ID:para_X]]` أو `[[ID:table_Y_rA_cB_pZ]]` في بدايته، يجب استخدام هذا المعرف الموجود **بالضبط** كقيمة لـ `term_id` في إخراج JSON الخاص بك لهذا البند.**
+    *   إذا لم يكن هناك معرف مُسبق، يمكنك إنشاء معرف تسلسلي بسيط مثل `clause_1`, `clause_2` للبنود الموضوعية التي تحددها. يجب أن يكون هذا المعرف فريداً ضمن قائمة البنود التي تُرجعها.
+5.  النص الكامل للبند (term_text): استخرج النص الكامل للبند الموضوعي المستهدف للتحليل. إذا كان البند يحتوي على معرف `[[ID:...]]`، قم بتضمين هذا المعرف في بداية `term_text` الذي تُرجعه.
+
+مهمة التحليل لكل بند موضوعي:
+1.  التوافق الشرعي (`is_valid_sharia`): حدد ما إذا كان متوافقًا (true) أم مخالفًا (false).
+2.  وصف المخالفة (`sharia_issue`): إذا كان مخالفًا، اشرح المخالفة بوضوح باللغة {output_language} (وإلا null).
+3.  المرجع (`reference_number`): اذكر رقم المعيار من AAOIFI الذي يتعلق بالمخالفة باللغة {output_language} إن أمكن (وإلا null).
+4.  الاقتراح البديل (`modified_term`): إذا كان مخالفًا، اقترح نصًا بديلاً يجعله متوافقًا باللغة {output_language} (وإلا null).
+
+تنسيق الإخراج (JSON حصراً):
+قائمة JSON تحتوي على كائنات تمثل *فقط* البنود الموضوعية المستخرجة. لا تضف أي نص قبل أو بعد قائمة JSON.
+مثال على عنصر في القائمة:
+```json
+[
+  {{
+    "term_id": "المعرف الفريد للبند",
+    "term_text": "النص الكامل للبند الموضوعي",
+    "is_valid_sharia": true,
+    "sharia_issue": null,
+    "reference_number": null,
+    "modified_term": null
+  }},
+  {{
+    "term_id": "معرف آخر",
+    "term_text": "نص بند آخر مخالف",
+    "is_valid_sharia": false,
+    "sharia_issue": "وصف المشكلة الشرعية هنا باللغة {output_language}",
+    "reference_number": "مرجع AAOIFI هنا باللغة {output_language}",
+    "modified_term": "الاقتراح البديل هنا باللغة {output_language}"
+  }}
+]
+```
+
+تنبيهات هامة:
+1.  التزم بتنسيق JSON المطلوب بدقة تامة.
+2.  أخرج قائمة JSON فقط، لا شيء قبلها ولا شيء بعدها.
+3.  تأكد من أن `term_id` فريد لكل بند موضوعي مستخرج.
+4.  الدقة: كن دقيقًا في التحليل والاقتراحات بناءً على معايير AAOIFI.
+5.  **اللغة: يجب أن تكون جميع النصوص التي تنشئها (مثل sharia_issue, reference_number, modified_term) باللغة المحددة في `{output_language}`.**
+ولكن ضيف جزئين
+الجزء الأول اني هديلو chunks مرتبطة بلعقد من كتاب AAOIFI يستند عليها في التحليل ولو مش مغطية البنود كلها يعتمد علي معرفتة الداخلية 
+الجزء التاني انو لازم يرجع 
+    "reference_number": "مرجع AAOIFI هنا باللغة {output_language}",
+حقيقي دون اي اختلاق من كتاب AAOIFI سواء لو جابو من chunks الداعمة للسياق او من معرفتة الداخلية 
+راجع كل ال prompts من المجلد لتحسين الأداء العام للمشروع والدقة في التحليل 
