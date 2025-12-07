@@ -40,6 +40,54 @@ except ImportError:
     logger.warning("Cloudinary not available")
 
 
+def normalize_term_ids(terms_list):
+    """
+    Normalize term_id values to the expected format: clause_0, clause_1, clause_2, etc.
+    This ensures frontend compatibility regardless of what the AI model outputs.
+    Guarantees unique clause IDs by tracking used numbers.
+    """
+    if not terms_list or not isinstance(terms_list, list):
+        return terms_list
+    
+    normalized = []
+    used_ids = set()
+    next_clause_num = 1
+    
+    for term in terms_list:
+        if not isinstance(term, dict):
+            continue
+            
+        original_id = term.get("term_id", "")
+        original_id_lower = original_id.lower() if original_id else ""
+        
+        if "preamble" in original_id_lower or "تمهيدي" in original_id_lower or "ديباجة" in original_id_lower:
+            new_id = "clause_0"
+        elif original_id_lower.startswith("clause_"):
+            suffix = original_id_lower.replace("clause_", "")
+            if suffix.isdigit():
+                num = int(suffix)
+                if num > 0:
+                    new_id = f"clause_{num}"
+                else:
+                    new_id = "clause_0"
+            else:
+                new_id = None
+        else:
+            new_id = None
+        
+        if new_id is None or new_id in used_ids:
+            while f"clause_{next_clause_num}" in used_ids:
+                next_clause_num += 1
+            new_id = f"clause_{next_clause_num}"
+            next_clause_num += 1
+        
+        used_ids.add(new_id)
+        term["term_id"] = new_id
+        normalized.append(term)
+    
+    return normalized
+
+
 def create_analysis_error_response(error_type: str, message: str, details: dict = None, status_code: int = 500):
     """Create a standardized error response for analysis endpoints."""
     response_data = create_error_response(error_type, message, details)
@@ -394,6 +442,8 @@ def analyze_file():
         if not isinstance(analysis_results_list, list):
             analysis_results_list = []
 
+        analysis_results_list = normalize_term_ids(analysis_results_list)
+        
         analysis_status = "success"
         tracer.add_sub_step("analysis_parsed", {
             "terms_count": len(analysis_results_list),

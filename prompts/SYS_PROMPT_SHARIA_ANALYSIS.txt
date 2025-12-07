@@ -20,7 +20,10 @@
 
 1. **التركيز على البنود الموضوعية**: استخرج وحلل (فقط) البنود الرئيسية التي تحتوي على شروط، التزامات، حقوق، أو أحكام تعاقدية فعلية.
 2. **تجاهل الأجزاء غير الموضوعية**: تجاهل الديباجة، تعريف الأطراف، العناوين العامة، التواريخ، أرقام الصفحات.
-3. **معرف البند (term_id)**: إذا كان النص يحتوي على معرف `[[ID:...]]` استخدمه، وإلا أنشئ معرفاً تسلسلياً.
+3. **معرف البند (term_id)**: استخدم الصيغة التالية بدقة:
+   - للبند التمهيدي/الديباجة: `clause_preamble`
+   - للبنود المرقمة: `clause_1`, `clause_2`, `clause_3`, ... وهكذا
+   - **مهم جداً**: يجب أن يبدأ كل معرف بـ `clause_` متبوعاً برقم البند أو `preamble`
 
 ## مهمة التحليل لكل بند موضوعي:
 
@@ -40,19 +43,27 @@
 ```json
 [
   {{
-    "term_id": "المعرف الفريد للبند",
-    "term_text": "النص الكامل للبند الموضوعي",
+    "term_id": "clause_preamble",
+    "term_text": "النص الكامل للبند التمهيدي",
     "is_valid_sharia": true,
     "sharia_issue": null,
     "reference_number": "مرجع AAOIFI إن وجد",
     "modified_term": null
   }},
   {{
-    "term_id": "معرف آخر",
+    "term_id": "clause_1",
+    "term_text": "نص البند الأول",
+    "is_valid_sharia": true,
+    "sharia_issue": null,
+    "reference_number": null,
+    "modified_term": null
+  }},
+  {{
+    "term_id": "clause_2",
     "term_text": "نص بند مخالف",
     "is_valid_sharia": false,
     "sharia_issue": "وصف المشكلة الشرعية",
-    "reference_number": "مرجع AAOIFI للمشكلة",
+    "reference_number": "AAOIFI Standard X (Section Y)",
     "modified_term": "الاقتراح البديل"
   }}
 ]
