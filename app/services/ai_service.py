@@ -11,6 +11,7 @@ import logging
 from flask import current_app
 from google import genai
 from google.genai import types
+from app.utils.logging_utils import get_request_tracer
 
 logger = logging.getLogger(__name__)
 
@@ -107,10 +108,24 @@ def send_text_to_remote_api(text_payload: str, session_id_key: str, formatted_sy
         max_retries = 3
         retry_delay = 5
         
+        tracer = get_request_tracer()
+        
         for attempt in range(max_retries):
             try:
                 logger.info(f"Sending request to AI API (attempt {attempt + 1}/{max_retries})")
+                api_start_time = time.time()
                 response = chat.send_message(text_payload)
+                api_duration = time.time() - api_start_time
+                
+                if tracer:
+                    tracer.record_api_call(
+                        service="gemini_chat",
+                        method="send_message",
+                        endpoint="chat.send_message",
+                        request_data={"session_id": session_id_key, "payload_length": len(text_payload), "attempt": attempt + 1},
+                        response_data={"response_length": len(response.text) if response.text else 0, "has_text": bool(response.text)},
+                        duration=api_duration
+                    )
                 
                 if not response.text:
                     if hasattr(response, 'prompt_feedback') and response.prompt_feedback:
@@ -182,9 +197,11 @@ def extract_text_from_file(file_path: str) -> str | None:
         
         max_retries = 2
         retry_delay = 3
+        tracer = get_request_tracer()
         
         for attempt in range(max_retries):
             try:
+                api_start_time = time.time()
                 response = client.models.generate_content(
                     model=model_name,
                     contents=[
@@ -192,6 +209,17 @@ def extract_text_from_file(file_path: str) -> str | None:
                         extraction_prompt
                     ]
                 )
+                api_duration = time.time() - api_start_time
+                
+                if tracer:
+                    tracer.record_api_call(
+                        service="gemini",
+                        method="extract_text_from_file",
+                        endpoint=f"models/{model_name}/generateContent",
+                        request_data={"file_path": file_path, "mime_type": mime_type, "file_size": len(file_data), "attempt": attempt + 1},
+                        response_data={"response_length": len(response.text) if response and response.text else 0, "has_text": bool(response and response.text)},
+                        duration=api_duration
+                    )
                 
                 if response and response.text:
                     logger.info(f"Successfully extracted text from {file_path}. Text length: {len(response.text)}")

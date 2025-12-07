@@ -6,7 +6,7 @@ from google.genai import types
 from pathlib import Path
 from typing import List, Dict, Optional, Tuple
 from flask import current_app
-from app.utils.logging_utils import get_logger, mask_key, get_trace_id, RequestTimer
+from app.utils.logging_utils import get_logger, mask_key, get_trace_id, RequestTimer, get_request_tracer
 
 logger = get_logger(__name__)
 
@@ -234,6 +234,9 @@ class FileSearchService:
 أخرج JSON array فقط:"""
             
             logger.debug("Calling Gemini API for extraction...")
+            tracer = get_request_tracer()
+            api_start_time = time.time()
+            
             response = self.client.models.generate_content(
                 model=self.model_name,
                 contents=extraction_prompt,
@@ -241,6 +244,17 @@ class FileSearchService:
                     response_modalities=["TEXT"]
                 )
             )
+            
+            api_duration = time.time() - api_start_time
+            if tracer:
+                tracer.record_api_call(
+                    service="gemini",
+                    method="extract_key_terms",
+                    endpoint=f"models/{self.model_name}/generateContent",
+                    request_data={"prompt_length": len(extraction_prompt)},
+                    response_data={"has_candidates": hasattr(response, 'candidates') and bool(response.candidates)},
+                    duration=api_duration
+                )
             
             if not hasattr(response, 'candidates') or not response.candidates:
                 logger.warning("FALLBACK: No candidates in response")
@@ -343,10 +357,12 @@ class FileSearchService:
             full_prompt = self.search_prompt_template.format(extracted_clauses=extracted_clauses_text)
 
             logger.debug("Querying Gemini File Search...")
+            tracer = get_request_tracer()
             
             max_retries = 3
             retry_count = 0
             response = None
+            general_search_start = time.time()
             
             while retry_count < max_retries:
                 try:
@@ -375,7 +391,18 @@ class FileSearchService:
                     else:
                         raise
 
+            general_search_duration = time.time() - general_search_start
             general_chunks = self._extract_grounding_chunks(response, top_k)
+            
+            if tracer:
+                tracer.record_api_call(
+                    service="gemini_file_search",
+                    method="general_search",
+                    endpoint=f"models/{self.model_name}/generateContent",
+                    request_data={"prompt_length": len(full_prompt), "top_k": top_k, "store_id": self.store_id},
+                    response_data={"chunks_count": len(general_chunks), "retries": retry_count},
+                    duration=general_search_duration
+                )
             logger.info(f"General search: {len(general_chunks)} chunks")
             search_timer.end_step()
             
@@ -416,6 +443,7 @@ class FileSearchService:
                         max_retries_sensitive = 3
                         retry_count_sensitive = 0
                         sensitive_response = None
+                        sensitive_search_start = time.time()
                         
                         while retry_count_sensitive < max_retries_sensitive:
                             try:
@@ -440,10 +468,22 @@ class FileSearchService:
                                 else:
                                     break
                         
+                        sensitive_search_duration = time.time() - sensitive_search_start
+                        
                         if sensitive_response:
                             clause_chunks = self._extract_grounding_chunks(sensitive_response, 2)
                             sensitive_chunks.extend(clause_chunks)
                             logger.debug(f"Sensitive search for {clause_id}: {len(clause_chunks)} chunks")
+                            
+                            if tracer:
+                                tracer.record_api_call(
+                                    service="gemini_file_search",
+                                    method="sensitive_search",
+                                    endpoint=f"models/{self.model_name}/generateContent",
+                                    request_data={"clause_id": clause_id, "issues": issues, "top_k": 2},
+                                    response_data={"chunks_count": len(clause_chunks), "retries": retry_count_sensitive},
+                                    duration=sensitive_search_duration
+                                )
                     
                     search_timer.end_step()
                 else:

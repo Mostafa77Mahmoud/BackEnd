@@ -141,6 +141,10 @@ def analyze_file():
 
             if not original_upload_result or not original_upload_result.get("secure_url"):
                 logger.error("Cloudinary upload failed")
+                tracer.record_error("upload_error", "Cloudinary upload failed")
+                tracer.end_step(status="error", error="Cloudinary upload failed")
+                trace_path = tracer.save_trace()
+                logger.info(f"Trace saved: {trace_path}")
                 return create_analysis_error_response(
                     "UPLOAD_ERROR",
                     "Failed to upload file to storage",
@@ -163,6 +167,10 @@ def analyze_file():
             )
             if not temp_processing_file_path:
                 logger.error("Download from Cloudinary failed")
+                tracer.record_error("download_error", "Failed to download file for processing")
+                tracer.end_step(status="error", error="Download from Cloudinary failed")
+                trace_path = tracer.save_trace()
+                logger.info(f"Trace saved: {trace_path}")
                 return create_analysis_error_response(
                     "DOWNLOAD_ERROR",
                     "Failed to download file for processing",
@@ -216,6 +224,10 @@ def analyze_file():
             extracted_markdown_from_llm = ai_extract_text(temp_processing_file_path)
             if extracted_markdown_from_llm is None:
                 logger.error(f"Extraction failed for {effective_ext}")
+                tracer.record_error("extraction_error", f"Failed to extract text from {effective_ext}")
+                tracer.end_step(status="error", error=f"Extraction failed for {effective_ext}")
+                trace_path = tracer.save_trace()
+                logger.info(f"Trace saved: {trace_path}")
                 return create_analysis_error_response(
                     "EXTRACTION_ERROR",
                     f"Failed to extract text from {effective_ext} file",
@@ -264,6 +276,11 @@ def analyze_file():
         sys_prompt = DefaultConfig.SYS_PROMPT
         if not sys_prompt:
             logger.error("System prompt not loaded")
+            tracer.start_step("3b_config_validation", {"check": "system_prompt"})
+            tracer.record_error("config_error", "System prompt not loaded")
+            tracer.end_step(status="error", error="System prompt not loaded")
+            trace_path = tracer.save_trace()
+            logger.info(f"Trace saved: {trace_path}")
             return create_analysis_error_response(
                 "CONFIG_ERROR",
                 "System prompt configuration error",
@@ -327,6 +344,11 @@ def analyze_file():
         
         if not analysis_input_text or not analysis_input_text.strip():
             logger.error("Empty analysis input")
+            tracer.start_step("4b_input_validation", {"check": "analysis_input_text"})
+            tracer.record_error("extraction_error", "No text could be extracted from the file")
+            tracer.end_step(status="error", error="Empty analysis input")
+            trace_path = tracer.save_trace()
+            logger.info(f"Trace saved: {trace_path}")
             return create_analysis_error_response(
                 "EXTRACTION_ERROR",
                 "No text could be extracted from the file",

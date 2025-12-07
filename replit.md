@@ -78,6 +78,13 @@ context/                   # AAOIFI standards documents
 - `POST /feedback/expert` - Expert feedback
 - `GET /health` - Health check
 
+### Request Tracing (Debug/Development)
+- `GET /admin/traces` - List all trace files with metadata
+- `GET /admin/traces/<filename>` - Get specific trace JSON
+- `GET /admin/traces/<filename>/download` - Download trace file
+
+Note: Trace endpoints require DEBUG mode or `TRACE_ACCESS_KEY` header/param.
+
 ### File Search
 - `POST /file_search/search` - Search AAOIFI standards
 - `POST /file_search/extract_terms` - Extract terms

@@ -7,8 +7,10 @@ Matches OldStrcturePerfectProject/utils.py upload_to_cloudinary_helper exactly.
 
 import os
 import uuid
+import time
 import logging
 import traceback
+from app.utils.logging_utils import get_request_tracer
 
 logger = logging.getLogger(__name__)
 
@@ -90,7 +92,24 @@ def upload_to_cloudinary_helper(
             logger.info(f"Attempting to upload PDF with access_mode: public, resource_type: {resource_type}")
 
         logger.debug(f"DEBUG: Attempting to upload to Cloudinary. File: {local_file_path}, Options: {upload_options}")
+        
+        tracer = get_request_tracer()
+        api_start_time = time.time()
+        
         upload_result = cloudinary.uploader.upload(local_file_path, **upload_options)
+        
+        api_duration = time.time() - api_start_time
+        
+        if tracer:
+            tracer.record_api_call(
+                service="cloudinary",
+                method="upload",
+                endpoint="cloudinary.uploader.upload",
+                request_data={"file_path": local_file_path, "folder": cloudinary_folder, "resource_type": resource_type},
+                response_data={"success": bool(upload_result and upload_result.get("secure_url")), "public_id": upload_result.get("public_id") if upload_result else None},
+                duration=api_duration
+            )
+        
         logger.debug(f"DEBUG: Raw Cloudinary upload_result for {local_file_path}: {upload_result}")
         
         if not upload_result or not upload_result.get("secure_url"):
