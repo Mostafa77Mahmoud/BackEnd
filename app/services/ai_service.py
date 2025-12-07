@@ -21,12 +21,18 @@ _clients = {}
 def init_ai_service(app):
     """Initialize AI service with configuration."""
     try:
-        google_api_key = app.config.get('GOOGLE_API_KEY')
         gemini_api_key = app.config.get('GEMINI_API_KEY')
+        gemini_file_search_key = app.config.get('GEMINI_FILE_SEARCH_API_KEY')
         
-        if not google_api_key and not gemini_api_key:
-            logger.warning("GOOGLE_API_KEY/GEMINI_API_KEY not configured - AI services will be unavailable")
-            return
+        if not gemini_api_key:
+            logger.warning("GEMINI_API_KEY not configured - AI analysis services will be unavailable")
+        else:
+            logger.info(f"GEMINI_API_KEY configured: {mask_key(gemini_api_key)}")
+            
+        if not gemini_file_search_key:
+            logger.warning("GEMINI_FILE_SEARCH_API_KEY not configured - File Search will be unavailable")
+        else:
+            logger.info(f"GEMINI_FILE_SEARCH_API_KEY configured: {mask_key(gemini_file_search_key)}")
             
         logger.info("Google GenAI service initialized (client will be created per request)")
     except Exception as e:
@@ -40,10 +46,10 @@ def mask_key(key):
     return f"{key[:8]}...{key[-4:]}" if len(key) > 12 else "***"
 
 def get_client():
-    """Get a configured GenAI client."""
-    api_key = current_app.config.get('GEMINI_API_KEY') or current_app.config.get('GOOGLE_API_KEY')
+    """Get a configured GenAI client for analysis, extraction and interaction."""
+    api_key = current_app.config.get('GEMINI_API_KEY')
     if not api_key:
-        raise ValueError("API Key not configured")
+        raise ValueError("GEMINI_API_KEY not configured - required for AI analysis services")
     
     logger.info(f"Creating GenAI client with API Key: {mask_key(api_key)}")
     

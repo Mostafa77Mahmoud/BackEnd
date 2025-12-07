@@ -99,18 +99,19 @@ class FileSearchService:
         self.timer = RequestTimer()
         self.file_search_enabled = check_file_search_support()
         
-        self.api_key = current_app.config.get('GEMINI_FILE_SEARCH_API_KEY') or current_app.config.get('GEMINI_API_KEY')
+        self.api_key = current_app.config.get('GEMINI_FILE_SEARCH_API_KEY')
         if not self.api_key:
-            logger.error("API key not configured for File Search")
+            logger.warning("GEMINI_FILE_SEARCH_API_KEY not configured - File Search service will be unavailable")
+            logger.warning("Please set GEMINI_FILE_SEARCH_API_KEY in secrets for dedicated file search")
             self.file_search_enabled = False
         
         self.client = None
         if self.api_key:
             try:
                 self.client = genai.Client(api_key=self.api_key)
-                logger.info(f"Initialized with API Key: {mask_key(self.api_key)}")
+                logger.info(f"File Search initialized with dedicated API Key: {mask_key(self.api_key)}")
             except Exception as e:
-                logger.error(f"Failed to create GenAI client: {e}")
+                logger.error(f"Failed to create GenAI client for File Search: {e}")
                 self.file_search_enabled = False
         
         self.model_name = current_app.config.get('MODEL_NAME', 'gemini-2.5-flash')

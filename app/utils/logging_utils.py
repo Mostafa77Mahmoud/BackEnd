@@ -243,6 +243,10 @@ class RequestTracer:
                         request_data: Any = None, response_data: Any = None,
                         status_code: Optional[int] = None, duration: Optional[float] = None,
                         error: Optional[str] = None):
+        token_usage = None
+        if isinstance(response_data, dict) and "token_usage" in response_data:
+            token_usage = response_data.get("token_usage")
+        
         api_call = {
             "service": service,
             "method": method,
@@ -252,7 +256,8 @@ class RequestTracer:
             "response": self._safe_serialize(response_data, max_length=5000),
             "status_code": status_code,
             "duration_seconds": round(duration, 3) if duration else None,
-            "error": error
+            "error": error,
+            "token_usage": token_usage
         }
         
         self.api_calls.append(api_call)
@@ -333,6 +338,15 @@ class RequestTracer:
         
         total_duration = round(time.time() - self.start_timestamp, 3)
         
+        total_input_tokens = 0
+        total_output_tokens = 0
+        total_tokens = 0
+        for call in self.api_calls:
+            if call.get("token_usage"):
+                total_input_tokens += call["token_usage"].get("input_tokens", 0) or 0
+                total_output_tokens += call["token_usage"].get("output_tokens", 0) or 0
+                total_tokens += call["token_usage"].get("total_tokens", 0) or 0
+        
         return {
             "trace_id": self.trace_id,
             "metadata": self.metadata,
@@ -341,7 +355,12 @@ class RequestTracer:
                 "total_steps": len(self.steps),
                 "total_api_calls": len(self.api_calls),
                 "total_errors": len(self.errors),
-                "status": "error" if self.errors else "success"
+                "status": "error" if self.errors else "success",
+                "token_usage": {
+                    "total_input_tokens": total_input_tokens,
+                    "total_output_tokens": total_output_tokens,
+                    "total_tokens": total_tokens
+                }
             },
             "steps": self.steps,
             "api_calls": self.api_calls,
