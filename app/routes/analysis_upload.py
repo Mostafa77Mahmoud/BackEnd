@@ -90,7 +90,7 @@ def normalize_term_ids(terms_list):
 
 def create_analysis_error_response(error_type: str, message: str, details: dict = None, status_code: int = 500):
     """Create a standardized error response for analysis endpoints."""
-    response_data = create_error_response(error_type, message, details)
+    response_data = create_error_response(error_type, message, details or {})
     return jsonify(response_data), status_code
 
 
