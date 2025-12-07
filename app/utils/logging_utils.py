@@ -1,11 +1,15 @@
 import logging
 import uuid
 import threading
-from typing import Optional
+import json
+import os
+from datetime import datetime
+from typing import Optional, Any, Dict, List
 from functools import wraps
 import time
 
 _trace_id_storage = threading.local()
+_request_tracer_storage = threading.local()
 
 _configured_loggers = set()
 
@@ -171,3 +175,271 @@ def create_success_response(data: dict, message: str = "Operation completed succ
         "data": data,
         "trace_id": get_trace_id()
     }
+
+
+class RequestTracer:
+    
+    TRACES_DIR = "traces"
+    
+    def __init__(self, trace_id: Optional[str] = None, endpoint: str = "unknown"):
+        self.trace_id = trace_id or get_trace_id()
+        self.endpoint = endpoint
+        self.start_time = datetime.now()
+        self.start_timestamp = time.time()
+        self.steps: List[Dict[str, Any]] = []
+        self.api_calls: List[Dict[str, Any]] = []
+        self.errors: List[Dict[str, Any]] = []
+        self.metadata: Dict[str, Any] = {
+            "trace_id": self.trace_id,
+            "endpoint": endpoint,
+            "start_time": self.start_time.isoformat(),
+        }
+        self._current_step: Optional[Dict[str, Any]] = None
+        self._step_start_time: Optional[float] = None
+        
+        os.makedirs(self.TRACES_DIR, exist_ok=True)
+    
+    def start_step(self, step_name: str, input_data: Optional[Any] = None):
+        if self._current_step:
+            self.end_step()
+        
+        self._step_start_time = time.time()
+        self._current_step = {
+            "step_name": step_name,
+            "step_number": len(self.steps) + 1,
+            "start_time": datetime.now().isoformat(),
+            "input": self._safe_serialize(input_data),
+            "output": None,
+            "duration_seconds": 0,
+            "status": "in_progress",
+            "sub_steps": [],
+            "api_calls": []
+        }
+    
+    def add_sub_step(self, sub_step_name: str, data: Any = None):
+        if self._current_step:
+            self._current_step["sub_steps"].append({
+                "name": sub_step_name,
+                "timestamp": datetime.now().isoformat(),
+                "data": self._safe_serialize(data)
+            })
+    
+    def end_step(self, output_data: Any = None, status: str = "success", error: Optional[str] = None):
+        if not self._current_step:
+            return
+        
+        self._current_step["end_time"] = datetime.now().isoformat()
+        self._current_step["duration_seconds"] = round(time.time() - self._step_start_time, 3) if self._step_start_time else 0
+        self._current_step["output"] = self._safe_serialize(output_data)
+        self._current_step["status"] = status
+        if error:
+            self._current_step["error"] = error
+        
+        self.steps.append(self._current_step)
+        self._current_step = None
+        self._step_start_time = None
+    
+    def record_api_call(self, service: str, method: str, endpoint: str = "", 
+                        request_data: Any = None, response_data: Any = None,
+                        status_code: Optional[int] = None, duration: Optional[float] = None,
+                        error: Optional[str] = None):
+        api_call = {
+            "service": service,
+            "method": method,
+            "endpoint": endpoint,
+            "timestamp": datetime.now().isoformat(),
+            "request": self._safe_serialize(request_data, max_length=2000),
+            "response": self._safe_serialize(response_data, max_length=5000),
+            "status_code": status_code,
+            "duration_seconds": round(duration, 3) if duration else None,
+            "error": error
+        }
+        
+        self.api_calls.append(api_call)
+        
+        if self._current_step:
+            self._current_step["api_calls"].append({
+                "service": service,
+                "method": method,
+                "duration": round(duration, 3) if duration else None,
+                "status": "error" if error else "success"
+            })
+    
+    def record_error(self, error_type: str, message: str, details: Any = None, step_name: Optional[str] = None):
+        self.errors.append({
+            "error_type": error_type,
+            "message": message,
+            "details": self._safe_serialize(details),
+            "step_name": step_name or (self._current_step["step_name"] if self._current_step else None),
+            "timestamp": datetime.now().isoformat()
+        })
+    
+    def set_metadata(self, key: str, value: Any):
+        self.metadata[key] = self._safe_serialize(value)
+    
+    def _safe_serialize(self, data: Any, max_length: int = 10000) -> Any:
+        if data is None:
+            return None
+        
+        try:
+            if isinstance(data, bytes):
+                return f"<bytes: {len(data)} bytes>"
+            
+            if isinstance(data, str):
+                if len(data) > max_length:
+                    return f"{data[:max_length]}... <truncated: {len(data)} total chars>"
+                return data
+            
+            if isinstance(data, (int, float, bool)):
+                return data
+            
+            if isinstance(data, (list, tuple)):
+                if len(data) > 100:
+                    return {
+                        "_type": "list",
+                        "_length": len(data),
+                        "_sample": [self._safe_serialize(item, max_length=500) for item in data[:10]],
+                        "_note": f"Showing first 10 of {len(data)} items"
+                    }
+                return [self._safe_serialize(item, max_length=1000) for item in data]
+            
+            if isinstance(data, dict):
+                result = {}
+                for k, v in data.items():
+                    key_str = str(k)
+                    if any(secret in key_str.lower() for secret in ['password', 'secret', 'api_key', 'token', 'auth']):
+                        result[key_str] = "****REDACTED****"
+                    else:
+                        result[key_str] = self._safe_serialize(v, max_length=1000)
+                return result
+            
+            if hasattr(data, '__dict__'):
+                return {
+                    "_type": type(data).__name__,
+                    "_attrs": self._safe_serialize(data.__dict__, max_length=1000)
+                }
+            
+            str_repr = str(data)
+            if len(str_repr) > max_length:
+                return f"{str_repr[:max_length]}... <truncated>"
+            return str_repr
+            
+        except Exception as e:
+            return f"<serialization_error: {str(e)}>"
+    
+    def get_trace(self) -> Dict[str, Any]:
+        if self._current_step:
+            self.end_step(status="incomplete")
+        
+        total_duration = round(time.time() - self.start_timestamp, 3)
+        
+        return {
+            "trace_id": self.trace_id,
+            "metadata": self.metadata,
+            "summary": {
+                "total_duration_seconds": total_duration,
+                "total_steps": len(self.steps),
+                "total_api_calls": len(self.api_calls),
+                "total_errors": len(self.errors),
+                "status": "error" if self.errors else "success"
+            },
+            "steps": self.steps,
+            "api_calls": self.api_calls,
+            "errors": self.errors,
+            "end_time": datetime.now().isoformat()
+        }
+    
+    def save_trace(self) -> str:
+        trace_data = self.get_trace()
+        
+        timestamp = self.start_time.strftime("%Y%m%d_%H%M%S")
+        filename = f"trace_{self.trace_id}_{timestamp}.json"
+        filepath = os.path.join(self.TRACES_DIR, filename)
+        
+        with open(filepath, 'w', encoding='utf-8') as f:
+            json.dump(trace_data, f, ensure_ascii=False, indent=2)
+        
+        return filepath
+
+
+def get_request_tracer() -> Optional[RequestTracer]:
+    return getattr(_request_tracer_storage, 'tracer', None)
+
+
+def set_request_tracer(tracer: RequestTracer):
+    _request_tracer_storage.tracer = tracer
+
+
+def clear_request_tracer():
+    if hasattr(_request_tracer_storage, 'tracer'):
+        delattr(_request_tracer_storage, 'tracer')
+
+
+def trace_step(step_name: str):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            tracer = get_request_tracer()
+            
+            if tracer:
+                input_summary = {
+                    "args_count": len(args),
+                    "kwargs_keys": list(kwargs.keys())
+                }
+                tracer.start_step(step_name, input_summary)
+            
+            try:
+                result = func(*args, **kwargs)
+                
+                if tracer:
+                    tracer.end_step(output_data=result, status="success")
+                
+                return result
+                
+            except Exception as e:
+                if tracer:
+                    tracer.record_error("exception", str(e), step_name=step_name)
+                    tracer.end_step(status="error", error=str(e))
+                raise
+        
+        return wrapper
+    return decorator
+
+
+def trace_api_call(service: str, method: str):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            tracer = get_request_tracer()
+            start_time = time.time()
+            
+            try:
+                result = func(*args, **kwargs)
+                duration = time.time() - start_time
+                
+                if tracer:
+                    tracer.record_api_call(
+                        service=service,
+                        method=method,
+                        request_data={"args_count": len(args), "kwargs_keys": list(kwargs.keys())},
+                        response_data=result,
+                        duration=duration
+                    )
+                
+                return result
+                
+            except Exception as e:
+                duration = time.time() - start_time
+                
+                if tracer:
+                    tracer.record_api_call(
+                        service=service,
+                        method=method,
+                        request_data={"args_count": len(args), "kwargs_keys": list(kwargs.keys())},
+                        error=str(e),
+                        duration=duration
+                    )
+                raise
+        
+        return wrapper
+    return decorator

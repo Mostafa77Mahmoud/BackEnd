@@ -26,7 +26,8 @@ from app.utils.text_processing import clean_model_response, generate_safe_public
 from app.utils.analysis_helpers import TEMP_PROCESSING_FOLDER
 from app.utils.logging_utils import (
     get_logger, get_trace_id, create_error_response, 
-    RequestTimer, log_request_summary
+    RequestTimer, log_request_summary,
+    RequestTracer, set_request_tracer, get_request_tracer, clear_request_tracer
 )
 
 logger = get_logger(__name__)
@@ -57,13 +58,23 @@ def analyze_file():
     file_search_status = "not_started"
     analysis_status = "not_started"
     
+    tracer = RequestTracer(endpoint="/analyze")
+    set_request_tracer(tracer)
+    tracer.set_metadata("session_id", session_id_local)
+    
     logger.info(f"Starting analysis for session: {session_id_local}")
 
+    tracer.start_step("1_initialization", {"request_method": "POST", "endpoint": "/analyze"})
+    
     contracts_collection = get_contracts_collection()
     terms_collection = get_terms_collection()
     
     if contracts_collection is None or terms_collection is None:
         logger.error("Database unavailable")
+        tracer.record_error("database_error", "Database service unavailable")
+        tracer.end_step(status="error", error="Database unavailable")
+        trace_path = tracer.save_trace()
+        logger.info(f"Trace saved: {trace_path}")
         return create_analysis_error_response(
             "DATABASE_ERROR", 
             "Database service unavailable",
@@ -72,6 +83,10 @@ def analyze_file():
 
     if "file" not in request.files:
         logger.warning("No file in request")
+        tracer.record_error("validation_error", "No file sent")
+        tracer.end_step(status="error", error="No file in request")
+        trace_path = tracer.save_trace()
+        logger.info(f"Trace saved: {trace_path}")
         return create_analysis_error_response(
             "VALIDATION_ERROR",
             "No file sent",
@@ -81,6 +96,10 @@ def analyze_file():
     uploaded_file_storage = request.files["file"]
     if not uploaded_file_storage or not uploaded_file_storage.filename:
         logger.warning("Invalid file")
+        tracer.record_error("validation_error", "Invalid file")
+        tracer.end_step(status="error", error="Invalid file")
+        trace_path = tracer.save_trace()
+        logger.info(f"Trace saved: {trace_path}")
         return create_analysis_error_response(
             "VALIDATION_ERROR",
             "Invalid file",
@@ -88,7 +107,9 @@ def analyze_file():
         )
 
     original_filename = clean_filename(uploaded_file_storage.filename)
+    tracer.set_metadata("original_filename", original_filename)
     logger.info(f"Processing: {original_filename}")
+    tracer.end_step({"filename": original_filename, "db_connected": True})
     timer.end_step()
 
     CLOUDINARY_BASE_FOLDER = current_app.config.get('CLOUDINARY_BASE_FOLDER', 'shariaa_analyzer_uploads')
@@ -105,6 +126,7 @@ def analyze_file():
 
     try:
         timer.start_step("upload")
+        tracer.start_step("2_file_upload", {"filename": original_filename, "cloudinary_available": CLOUDINARY_AVAILABLE})
         file_base, _ = os.path.splitext(original_filename)
 
         if CLOUDINARY_AVAILABLE and cloudinary:
@@ -162,9 +184,15 @@ def analyze_file():
             }
             logger.info(f"Saved locally ({file_size} bytes)")
         
+        tracer.end_step({
+            "file_size_bytes": file_size,
+            "storage_type": "cloudinary" if CLOUDINARY_AVAILABLE else "local",
+            "cloudinary_url": original_cloudinary_info.get("url") if original_cloudinary_info else None
+        })
         timer.end_step()
 
         timer.start_step("text_extraction")
+        tracer.start_step("3_text_extraction", {"file_extension": effective_ext})
         detected_lang = 'ar'
         original_contract_plain = ""
         original_contract_markdown = None
@@ -207,12 +235,22 @@ def analyze_file():
             logger.info(f"Extracted {extracted_chars} chars from {effective_ext.upper()}")
         else:
             logger.error(f"Unsupported type: {effective_ext}")
+            tracer.record_error("validation_error", f"Unsupported file type: {effective_ext}")
+            tracer.end_step(status="error", error=f"Unsupported: {effective_ext}")
+            trace_path = tracer.save_trace()
+            logger.info(f"Trace saved: {trace_path}")
             return create_analysis_error_response(
                 "VALIDATION_ERROR",
                 f"Unsupported file type: {effective_ext}",
                 status_code=400
             )
         
+        tracer.set_metadata("extracted_chars", extracted_chars)
+        tracer.end_step({
+            "format": original_format_to_store,
+            "extracted_chars": extracted_chars,
+            "has_markdown": bool(original_contract_markdown or generated_markdown_from_docx)
+        })
         timer.end_step()
 
         if original_contract_plain and len(original_contract_plain) > 20:
@@ -233,15 +271,22 @@ def analyze_file():
             )
         
         timer.start_step("file_search")
+        tracer.start_step("4_file_search_aaoifi", {"input_text_length": len(analysis_input_text) if analysis_input_text else 0})
         aaoifi_context = ""
         aaoifi_chunks = []
         file_search_status = "in_progress"
+        extracted_terms = []
         
         try:
             logger.info("Starting AAOIFI context retrieval")
             from app.services.file_search import FileSearchService
             file_search_service = FileSearchService()
             aaoifi_chunks, extracted_terms = file_search_service.search_chunks(analysis_input_text, top_k=10)
+            
+            tracer.add_sub_step("extracted_terms", {
+                "count": len(extracted_terms),
+                "terms": extracted_terms
+            })
             
             if aaoifi_chunks:
                 logger.info(f"Retrieved {len(aaoifi_chunks)} chunks")
@@ -253,6 +298,11 @@ def analyze_file():
                 aaoifi_context = "\n\n".join(chunk_texts) if chunk_texts else ""
                 logger.info(f"Context size: {len(aaoifi_context)} chars")
                 file_search_status = "success"
+                
+                tracer.add_sub_step("aaoifi_chunks", {
+                    "count": len(aaoifi_chunks),
+                    "chunks": aaoifi_chunks
+                })
             else:
                 logger.warning("No chunks retrieved")
                 file_search_status = "no_results"
@@ -260,7 +310,14 @@ def analyze_file():
             logger.warning(f"File search failed: {e}")
             file_search_status = f"error: {str(e)[:50]}"
             aaoifi_context = ""
+            tracer.record_error("file_search_error", str(e))
         
+        tracer.end_step({
+            "status": file_search_status,
+            "chunks_count": len(aaoifi_chunks),
+            "context_length": len(aaoifi_context),
+            "extracted_terms_count": len(extracted_terms)
+        })
         timer.end_step()
         
         formatted_sys_prompt = sys_prompt.format(
@@ -277,6 +334,11 @@ def analyze_file():
             )
 
         timer.start_step("ai_analysis")
+        tracer.start_step("5_ai_analysis", {
+            "input_text_length": len(analysis_input_text) if analysis_input_text else 0,
+            "prompt_length": len(formatted_sys_prompt),
+            "detected_language": detected_lang
+        })
         analysis_status = "in_progress"
         logger.info("Sending to LLM for analysis")
         
@@ -286,9 +348,18 @@ def analyze_file():
             formatted_sys_prompt
         )
         
+        tracer.add_sub_step("llm_response_received", {
+            "response_length": len(external_response_text) if external_response_text else 0,
+            "response_preview": external_response_text[:500] if external_response_text else None
+        })
+        
         if not external_response_text or external_response_text.startswith(("ERROR_PROMPT_BLOCKED", "ERROR_CONTENT_BLOCKED")):
             logger.error(f"LLM response blocked: {external_response_text}")
             analysis_status = "blocked"
+            tracer.record_error("ai_blocked", f"Response blocked: {external_response_text}")
+            tracer.end_step(status="error", error="Content blocked")
+            trace_path = tracer.save_trace()
+            logger.info(f"Trace saved: {trace_path}")
             return create_analysis_error_response(
                 "AI_ERROR",
                 "Analysis was blocked by content filter",
@@ -302,10 +373,20 @@ def analyze_file():
             analysis_results_list = []
 
         analysis_status = "success"
+        tracer.add_sub_step("analysis_parsed", {
+            "terms_count": len(analysis_results_list),
+            "terms": analysis_results_list
+        })
         logger.info(f"Analysis complete: {len(analysis_results_list)} terms")
+        tracer.end_step({
+            "status": "success",
+            "terms_count": len(analysis_results_list),
+            "response_length": len(external_response_text) if external_response_text else 0
+        })
         timer.end_step()
 
         timer.start_step("save_results")
+        tracer.start_step("6_save_results", {"terms_count": len(analysis_results_list)})
         with tempfile.NamedTemporaryFile(
             mode='w', 
             encoding='utf-8', 
@@ -364,6 +445,15 @@ def analyze_file():
             terms_collection.insert_many(terms_to_insert)
             logger.debug(f"Inserted {len(terms_to_insert)} terms")
         
+        tracer.add_sub_step("mongodb_saved", {
+            "contract_id": session_id_local,
+            "terms_inserted": len(terms_to_insert)
+        })
+        tracer.end_step({
+            "session_id": session_id_local,
+            "terms_saved": len(terms_to_insert),
+            "cloudinary_uploaded": bool(analysis_results_cloudinary_info)
+        })
         timer.end_step()
 
         timing_summary = timer.get_summary()
@@ -397,12 +487,15 @@ def analyze_file():
             secure=request.is_secure
         )
 
+        trace_path = tracer.save_trace()
+        logger.info(f"Trace saved: {trace_path}")
         logger.info(f"Analysis successful: {session_id_local}")
         return response
 
     except json.JSONDecodeError as je:
         analysis_status = "json_error"
         logger.exception(f"JSON parse error: {je}")
+        tracer.record_error("json_decode_error", str(je))
         timing_summary = timer.get_summary()
         log_request_summary(logger, {
             "trace_id": get_trace_id(),
@@ -413,6 +506,8 @@ def analyze_file():
             "total_time": timing_summary["total_time_seconds"],
             "step_times": timing_summary["steps"]
         })
+        trace_path = tracer.save_trace()
+        logger.info(f"Trace saved: {trace_path}")
         return create_analysis_error_response(
             "PARSE_ERROR",
             "Failed to parse analysis response",
@@ -423,6 +518,7 @@ def analyze_file():
     except Exception as e:
         analysis_status = "exception"
         logger.exception(f"Analysis failed: {e}")
+        tracer.record_error("exception", str(e))
         timing_summary = timer.get_summary()
         log_request_summary(logger, {
             "trace_id": get_trace_id(),
@@ -433,6 +529,8 @@ def analyze_file():
             "total_time": timing_summary["total_time_seconds"],
             "step_times": timing_summary["steps"]
         })
+        trace_path = tracer.save_trace()
+        logger.info(f"Trace saved: {trace_path}")
         return create_analysis_error_response(
             "ANALYSIS_ERROR",
             f"Analysis failed: {str(e)}",
