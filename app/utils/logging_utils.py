@@ -152,6 +152,14 @@ def log_request_summary(logger: logging.Logger, summary_data: dict):
         for step, time_val in summary_data['step_times'].items():
             summary_lines.append(f"  - {step}: {time_val}s")
     
+    # Add token usage summary if available
+    if 'token_usage' in summary_data:
+        token_usage = summary_data['token_usage']
+        summary_lines.append("Token Usage (Session Total):")
+        summary_lines.append(f"  - Input Tokens: {token_usage.get('total_input_tokens', 0)}")
+        summary_lines.append(f"  - Output Tokens: {token_usage.get('total_output_tokens', 0)}")
+        summary_lines.append(f"  - Total Tokens: {token_usage.get('total_tokens', 0)}")
+    
     summary_lines.append("=" * 50)
     
     for line in summary_lines:

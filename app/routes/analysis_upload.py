@@ -529,6 +529,9 @@ def analyze_file():
         timer.end_step()
 
         timing_summary = timer.get_summary()
+        # Get token usage from tracer for session total
+        trace_data = tracer.get_trace()
+        token_usage = trace_data.get("summary", {}).get("token_usage", {})
         log_request_summary(logger, {
             "trace_id": get_trace_id(),
             "file_size": file_size,
@@ -536,7 +539,8 @@ def analyze_file():
             "analysis_status": analysis_status,
             "file_search_status": file_search_status,
             "total_time": timing_summary["total_time_seconds"],
-            "step_times": timing_summary["steps"]
+            "step_times": timing_summary["steps"],
+            "token_usage": token_usage
         })
 
         response_payload = {

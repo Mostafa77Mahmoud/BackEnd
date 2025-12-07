@@ -29,8 +29,9 @@ class DefaultConfig:
     SECRET_KEY: str = os.environ.get('FLASK_SECRET_KEY', 'dev-secret-key-change-in-production')
     DEBUG: bool = os.environ.get('DEBUG', 'True').lower() == 'true'
     
-    GOOGLE_API_KEY: str | None = os.environ.get("GOOGLE_API_KEY")
-    GEMINI_API_KEY: str | None = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    # Note: Do NOT use GOOGLE_API_KEY - it conflicts with google-genai library auto-detection
+    # Use only GEMINI_API_KEY for analysis and GEMINI_FILE_SEARCH_API_KEY for file search
+    GEMINI_API_KEY: str | None = os.environ.get("GEMINI_API_KEY")
     MODEL_NAME: str = os.environ.get("MODEL_NAME", "gemini-2.5-flash")
     TEMPERATURE: int = int(os.environ.get("TEMPERATURE", "0"))
     

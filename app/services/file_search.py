@@ -108,7 +108,15 @@ class FileSearchService:
         self.client = None
         if self.api_key:
             try:
-                self.client = genai.Client(api_key=self.api_key)
+                import os
+                # Temporarily unset GOOGLE_API_KEY to prevent library auto-detection conflict
+                original_google_key = os.environ.pop('GOOGLE_API_KEY', None)
+                try:
+                    self.client = genai.Client(api_key=self.api_key)
+                finally:
+                    # Restore GOOGLE_API_KEY if it was set
+                    if original_google_key is not None:
+                        os.environ['GOOGLE_API_KEY'] = original_google_key
                 logger.info(f"File Search initialized with dedicated API Key: {mask_key(self.api_key)}")
             except Exception as e:
                 logger.error(f"Failed to create GenAI client for File Search: {e}")

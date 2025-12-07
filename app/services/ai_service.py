@@ -47,13 +47,23 @@ def mask_key(key):
 
 def get_client():
     """Get a configured GenAI client for analysis, extraction and interaction."""
+    import os
     api_key = current_app.config.get('GEMINI_API_KEY')
     if not api_key:
         raise ValueError("GEMINI_API_KEY not configured - required for AI analysis services")
     
     logger.info(f"Creating GenAI client with API Key: {mask_key(api_key)}")
     
-    return genai.Client(api_key=api_key)
+    # Temporarily unset GOOGLE_API_KEY to prevent library auto-detection conflict
+    original_google_key = os.environ.pop('GOOGLE_API_KEY', None)
+    try:
+        client = genai.Client(api_key=api_key)
+    finally:
+        # Restore GOOGLE_API_KEY if it was set
+        if original_google_key is not None:
+            os.environ['GOOGLE_API_KEY'] = original_google_key
+    
+    return client
 
 def get_chat_session(session_id_key: str, system_instruction: str | None = None, force_new: bool = False):
     """Get or create a chat session for AI interactions."""
