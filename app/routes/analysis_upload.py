@@ -173,8 +173,7 @@ def analyze_file():
 
         # Load and format system prompt
         from config.default import DefaultConfig
-        config = DefaultConfig()
-        sys_prompt = config.SYS_PROMPT
+        sys_prompt = DefaultConfig.SYS_PROMPT
         if not sys_prompt:
             logger.error("System prompt not loaded - check prompts/ directory")
             raise ValueError("System prompt configuration error.")

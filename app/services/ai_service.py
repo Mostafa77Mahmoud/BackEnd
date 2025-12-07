@@ -172,8 +172,7 @@ def extract_text_from_file(file_path: str) -> str | None:
         logger.info(f"Extracting text from file: {file_path}")
         
         from config.default import DefaultConfig
-        config = DefaultConfig()
-        extraction_prompt = config.EXTRACTION_PROMPT
+        extraction_prompt = DefaultConfig.EXTRACTION_PROMPT
             
         client = get_client()
         model_name = current_app.config.get('MODEL_NAME', 'gemini-2.5-flash')
@@ -250,8 +249,7 @@ def send_file_to_remote_api(file_path: str, session_id=None, output_language='ar
 
     try:
         from config.default import DefaultConfig
-        config = DefaultConfig()
-        sys_prompt_template = config.SYS_PROMPT
+        sys_prompt_template = DefaultConfig.SYS_PROMPT
         
         logger.info(f"Analyzing extracted content from file {file_path} for session: {session_id or 'default'}")
         formatted_sys_prompt = sys_prompt_template.format(output_language=output_language)

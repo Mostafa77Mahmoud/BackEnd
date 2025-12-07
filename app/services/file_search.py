@@ -80,14 +80,12 @@ class FileSearchService:
     @property
     def extract_prompt_template(self):
         from config.default import DefaultConfig
-        config = DefaultConfig()
-        return config.EXTRACT_KEY_TERMS_PROMPT
+        return DefaultConfig.EXTRACT_KEY_TERMS_PROMPT
 
     @property
     def search_prompt_template(self):
         from config.default import DefaultConfig
-        config = DefaultConfig()
-        return config.FILE_SEARCH_PROMPT
+        return DefaultConfig.FILE_SEARCH_PROMPT
 
     def initialize_store(self) -> str:
         """

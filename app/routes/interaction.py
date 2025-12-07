@@ -61,18 +61,11 @@ def interact():
         from app.services.ai_service import get_chat_session
         from config.default import DefaultConfig
         
-        # Get interaction prompt from config
-        config = DefaultConfig()
-        
         # Get analysis type from session (already fetched above)
         analysis_type = session_doc.get("analysis_type", "sharia")
             
         # Select appropriate interaction prompt
-        # Select appropriate interaction prompt
-        # if analysis_type == "legal":
-        #     interaction_prompt = getattr(config, 'INTERACTION_PROMPT_LEGAL', config.INTERACTION_PROMPT_SHARIA)
-        # else:
-        interaction_prompt = config.INTERACTION_PROMPT_SHARIA
+        interaction_prompt = DefaultConfig.INTERACTION_PROMPT_SHARIA
         
         # Retrieve AAOIFI context
         aaoifi_context = ""
@@ -196,18 +189,11 @@ def review_modification():
         from app.services.ai_service import get_chat_session
         from config.default import DefaultConfig
         
-        # Get review prompt from config
-        config = DefaultConfig()
-        
         # Get analysis type from session (already fetched above)
         analysis_type = session_doc.get("analysis_type", "sharia")
             
         # Select appropriate review prompt
-        # Select appropriate review prompt
-        # if analysis_type == "legal":
-        #     review_prompt = getattr(config, 'REVIEW_MODIFICATION_PROMPT_LEGAL', '')
-        # else:
-        review_prompt = getattr(config, 'REVIEW_MODIFICATION_PROMPT_SHARIA', '')
+        review_prompt = DefaultConfig.REVIEW_MODIFICATION_PROMPT_SHARIA
         
         # Retrieve AAOIFI context for review
         aaoifi_context = ""
