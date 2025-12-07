@@ -123,6 +123,13 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### December 7, 2025 - FileSearchService Graceful Handling
+- **Fixed**: Added null checks in `app/services/file_search.py` for when `GEMINI_FILE_SEARCH_API_KEY` is not configured
+  - `extract_key_terms()`: Returns empty list `[]` if `self.client` is None
+  - `search_chunks()`: Returns empty tuple `([], [])` if `self.client` is None
+  - Prevents AttributeError crashes when dedicated file search key is absent
+  - Analysis continues gracefully using fallback paths
+
 ### December 7, 2025 - DefaultConfig Access Pattern Fix
 - **Fixed**: Changed all files to access prompts as class attributes instead of instance attributes
   - `app/services/file_search.py` - Uses property methods to access `DefaultConfig.EXTRACT_KEY_TERMS_PROMPT` and `DefaultConfig.FILE_SEARCH_PROMPT`
