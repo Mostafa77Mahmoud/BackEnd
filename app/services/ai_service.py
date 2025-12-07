@@ -117,13 +117,22 @@ def send_text_to_remote_api(text_payload: str, session_id_key: str, formatted_sy
                 response = chat.send_message(text_payload)
                 api_duration = time.time() - api_start_time
                 
+                token_usage = {}
+                if hasattr(response, 'usage_metadata') and response.usage_metadata:
+                    token_usage = {
+                        "input_tokens": getattr(response.usage_metadata, 'prompt_token_count', 0),
+                        "output_tokens": getattr(response.usage_metadata, 'candidates_token_count', 0),
+                        "total_tokens": getattr(response.usage_metadata, 'total_token_count', 0)
+                    }
+                    logger.info(f"Token usage for session {session_id_key}: input={token_usage['input_tokens']}, output={token_usage['output_tokens']}, total={token_usage['total_tokens']}")
+                
                 if tracer:
                     tracer.record_api_call(
                         service="gemini_chat",
                         method="send_message",
                         endpoint="chat.send_message",
                         request_data={"session_id": session_id_key, "payload_length": len(text_payload), "attempt": attempt + 1},
-                        response_data={"response_length": len(response.text) if response.text else 0, "has_text": bool(response.text)},
+                        response_data={"response_length": len(response.text) if response.text else 0, "has_text": bool(response.text), "token_usage": token_usage},
                         duration=api_duration
                     )
                 
@@ -211,13 +220,22 @@ def extract_text_from_file(file_path: str) -> str | None:
                 )
                 api_duration = time.time() - api_start_time
                 
+                token_usage = {}
+                if hasattr(response, 'usage_metadata') and response.usage_metadata:
+                    token_usage = {
+                        "input_tokens": getattr(response.usage_metadata, 'prompt_token_count', 0),
+                        "output_tokens": getattr(response.usage_metadata, 'candidates_token_count', 0),
+                        "total_tokens": getattr(response.usage_metadata, 'total_token_count', 0)
+                    }
+                    logger.info(f"Token usage for file extraction {file_path}: input={token_usage['input_tokens']}, output={token_usage['output_tokens']}, total={token_usage['total_tokens']}")
+                
                 if tracer:
                     tracer.record_api_call(
                         service="gemini",
                         method="extract_text_from_file",
                         endpoint=f"models/{model_name}/generateContent",
                         request_data={"file_path": file_path, "mime_type": mime_type, "file_size": len(file_data), "attempt": attempt + 1},
-                        response_data={"response_length": len(response.text) if response and response.text else 0, "has_text": bool(response and response.text)},
+                        response_data={"response_length": len(response.text) if response and response.text else 0, "has_text": bool(response and response.text), "token_usage": token_usage},
                         duration=api_duration
                     )
                 
