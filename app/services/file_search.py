@@ -219,6 +219,11 @@ class FileSearchService:
         logger.info("STEP 1: Term Extraction")
         logger.debug(f"Contract length: {len(contract_text)} chars")
         
+        if self.client is None:
+            logger.warning("FALLBACK: GenAI client not available, skipping term extraction")
+            self.timer.end_step()
+            return []
+        
         try:
             try:
                 extraction_prompt = self.extract_prompt_template.format(contract_text=contract_text)
@@ -328,6 +333,10 @@ class FileSearchService:
 
     def search_chunks(self, contract_text: str, top_k: Optional[int] = None) -> Tuple[List[Dict], List[Dict]]:
         search_timer = RequestTimer()
+        
+        if self.client is None:
+            logger.warning("FALLBACK: GenAI client not available, returning empty results")
+            return [], []
         
         if not self.store_id:
             try:

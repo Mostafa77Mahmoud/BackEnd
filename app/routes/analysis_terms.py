@@ -98,10 +98,7 @@ def get_session_details(session_id):
         for key, value in session_doc.items():
             session_doc[key] = convert_for_json(value)
         
-        return jsonify({
-            "session_id": session_id,
-            "session_details": session_doc
-        })
+        return jsonify(session_doc)
         
     except Exception as e:
         logger.error(f"Error retrieving session details: {str(e)}")
@@ -135,11 +132,7 @@ def get_session_terms(session_id):
             for key, value in term.items():
                 term[key] = convert_for_json(value)
         
-        return jsonify({
-            "session_id": session_id,
-            "terms": terms_list,
-            "total_terms": len(terms_list)
-        })
+        return jsonify(terms_list)
         
     except Exception as e:
         logger.error(f"Error retrieving session terms: {str(e)}")
