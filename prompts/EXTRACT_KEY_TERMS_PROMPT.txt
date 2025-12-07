@@ -4,20 +4,30 @@
 الخطوات:
 1. ركز فقط على 5-15 بنداً من أكثر البنود أهمية شرعية.
 2. لكل بند مهم، استخرج:
-   - term_id: معرف فريد.
+   - term_id: معرف فريد (مثال: clause_1, clause_2).
    - term_text: النص الكامل للبند.
    - potential_issues: قائمة بالمصطلحات الشرعية العربية الدقيقة.
    - relevance_reason: لماذا هذا البند مهم شرعياً.
 
-أخرج النتيجة كـ JSON صالح فقط:
+**مهم جداً**: أخرج النتيجة كـ JSON array صالح فقط بدون أي نص إضافي. لا تضف markdown أو تعليقات.
+
+مثال على الصيغة المطلوبة:
 [
-  {
-    "term_id": "clause_example",
-    "term_text": "...",
-    "potential_issues": ["الربا"],
-    "relevance_reason": "..."
-  }
+  {{
+    "term_id": "clause_1",
+    "term_text": "نص البند هنا",
+    "potential_issues": ["الربا", "الغرر"],
+    "relevance_reason": "سبب الأهمية الشرعية"
+  }},
+  {{
+    "term_id": "clause_2",
+    "term_text": "نص بند آخر",
+    "potential_issues": ["الجهالة"],
+    "relevance_reason": "سبب آخر"
+  }}
 ]
 
 نص العقد:
 {contract_text}
+
+أخرج JSON array فقط بدون أي نص آخر:

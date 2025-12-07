@@ -10,9 +10,8 @@ import uuid
 import json
 import datetime
 import tempfile
-import traceback
-import logging
-from flask import request, jsonify, current_app
+import time
+from flask import request, jsonify, current_app, g
 from docx import Document as DocxDocument
 from langdetect import detect
 from langdetect.lang_detect_exception import LangDetectException
@@ -25,8 +24,12 @@ from app.services.cloudinary_service import upload_to_cloudinary_helper, CLOUDIN
 from app.utils.file_helpers import ensure_dir, clean_filename, download_file_from_url
 from app.utils.text_processing import clean_model_response, generate_safe_public_id
 from app.utils.analysis_helpers import TEMP_PROCESSING_FOLDER
+from app.utils.logging_utils import (
+    get_logger, get_trace_id, create_error_response, 
+    RequestTimer, log_request_summary
+)
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 try:
     import cloudinary
@@ -36,32 +39,58 @@ except ImportError:
     logger.warning("Cloudinary not available")
 
 
+def create_analysis_error_response(error_type: str, message: str, details: dict = None, status_code: int = 500):
+    """Create a standardized error response for analysis endpoints."""
+    response_data = create_error_response(error_type, message, details)
+    return jsonify(response_data), status_code
+
+
 @analysis_bp.route('/analyze', methods=['POST'])
 def analyze_file():
     """Upload and analyze a contract file - matches old api_server.py format exactly."""
+    timer = RequestTimer()
+    timer.start_step("initialization")
+    
     session_id_local = str(uuid.uuid4())
-    logger.info(f"Starting file analysis for session: {session_id_local}")
+    file_size = 0
+    extracted_chars = 0
+    file_search_status = "not_started"
+    analysis_status = "not_started"
+    
+    logger.info(f"Starting analysis for session: {session_id_local}")
 
     contracts_collection = get_contracts_collection()
     terms_collection = get_terms_collection()
     
     if contracts_collection is None or terms_collection is None:
-        logger.error("Database service unavailable")
-        return jsonify({"error": "Database service unavailable."}), 503
+        logger.error("Database unavailable")
+        return create_analysis_error_response(
+            "DATABASE_ERROR", 
+            "Database service unavailable",
+            status_code=503
+        )
 
     if "file" not in request.files:
-        logger.warning("No file sent in request")
-        return jsonify({"error": "No file sent."}), 400
+        logger.warning("No file in request")
+        return create_analysis_error_response(
+            "VALIDATION_ERROR",
+            "No file sent",
+            status_code=400
+        )
 
     uploaded_file_storage = request.files["file"]
     if not uploaded_file_storage or not uploaded_file_storage.filename:
-        logger.warning("Invalid file in request")
-        return jsonify({"error": "Invalid file."}), 400
+        logger.warning("Invalid file")
+        return create_analysis_error_response(
+            "VALIDATION_ERROR",
+            "Invalid file",
+            status_code=400
+        )
 
     original_filename = clean_filename(uploaded_file_storage.filename)
-    logger.info(f"Processing file: {original_filename} for session: {session_id_local}")
+    logger.info(f"Processing: {original_filename}")
+    timer.end_step()
 
-    # Cloudinary folder structure
     CLOUDINARY_BASE_FOLDER = current_app.config.get('CLOUDINARY_BASE_FOLDER', 'shariaa_analyzer_uploads')
     CLOUDINARY_ORIGINAL_UPLOADS_SUBFOLDER = current_app.config.get('CLOUDINARY_ORIGINAL_UPLOADS_SUBFOLDER', 'original_contracts')
     CLOUDINARY_ANALYSIS_RESULTS_SUBFOLDER = current_app.config.get('CLOUDINARY_ANALYSIS_RESULTS_SUBFOLDER', 'analysis_results_json')
@@ -75,9 +104,9 @@ def analyze_file():
     temp_analysis_results_path = None
 
     try:
+        timer.start_step("upload")
         file_base, _ = os.path.splitext(original_filename)
 
-        # Upload original file to Cloudinary
         if CLOUDINARY_AVAILABLE and cloudinary:
             safe_public_id = generate_safe_public_id(file_base, "original")
             original_upload_result = cloudinary.uploader.upload(
@@ -89,33 +118,41 @@ def analyze_file():
             )
 
             if not original_upload_result or not original_upload_result.get("secure_url"):
-                logger.error("Cloudinary upload failed for original file")
-                raise Exception("Cloudinary upload failed for original file.")
+                logger.error("Cloudinary upload failed")
+                return create_analysis_error_response(
+                    "UPLOAD_ERROR",
+                    "Failed to upload file to storage",
+                    status_code=500
+                )
 
+            file_size = original_upload_result.get("bytes", 0)
             original_cloudinary_info = {
                 "url": original_upload_result.get("secure_url"),
                 "public_id": original_upload_result.get("public_id"),
                 "format": original_upload_result.get("format"),
                 "user_facing_filename": original_filename
             }
-            logger.info(f"Original file uploaded to Cloudinary: {original_cloudinary_info['url']}")
+            logger.info(f"Uploaded to Cloudinary ({file_size} bytes)")
 
-            # Download for processing
             temp_processing_file_path = download_file_from_url(
                 original_cloudinary_info["url"], 
                 original_filename, 
                 TEMP_PROCESSING_FOLDER
             )
             if not temp_processing_file_path:
-                logger.error("Failed to download original file from Cloudinary for processing")
-                raise Exception("Failed to download original file from Cloudinary for processing.")
+                logger.error("Download from Cloudinary failed")
+                return create_analysis_error_response(
+                    "DOWNLOAD_ERROR",
+                    "Failed to download file for processing",
+                    status_code=500
+                )
                 
             effective_ext = f".{original_cloudinary_info['format']}" if original_cloudinary_info['format'] else os.path.splitext(original_filename)[1].lower()
         else:
-            # Fallback: save locally if Cloudinary not available
             ensure_dir(TEMP_PROCESSING_FOLDER)
             temp_processing_file_path = os.path.join(TEMP_PROCESSING_FOLDER, f"{session_id_local}_{original_filename}")
             uploaded_file_storage.save(temp_processing_file_path)
+            file_size = os.path.getsize(temp_processing_file_path)
             effective_ext = os.path.splitext(original_filename)[1].lower()
             original_cloudinary_info = {
                 "url": f"local://{temp_processing_file_path}",
@@ -123,8 +160,11 @@ def analyze_file():
                 "format": effective_ext.replace(".", ""),
                 "user_facing_filename": original_filename
             }
-            logger.info(f"File saved locally (Cloudinary unavailable): {temp_processing_file_path}")
+            logger.info(f"Saved locally ({file_size} bytes)")
+        
+        timer.end_step()
 
+        timer.start_step("text_extraction")
         detected_lang = 'ar'
         original_contract_plain = ""
         original_contract_markdown = None
@@ -132,22 +172,27 @@ def analyze_file():
         analysis_input_text = None
         original_format_to_store = effective_ext.replace(".", "") if effective_ext else "unknown"
 
-        logger.info(f"Processing file with extension: {effective_ext}")
+        logger.debug(f"Extension: {effective_ext}")
 
         if effective_ext == ".docx":
-            logger.info("Processing DOCX file")
+            logger.info("Processing DOCX")
             doc = DocxDocument(temp_processing_file_path)
             analysis_input_text, original_contract_plain = build_structured_text_for_analysis(doc)
             generated_markdown_from_docx = analysis_input_text
             original_format_to_store = "docx"
-            logger.info(f"Extracted {len(original_contract_plain)} characters from DOCX")
+            extracted_chars = len(original_contract_plain)
+            logger.info(f"Extracted {extracted_chars} chars from DOCX")
             
         elif effective_ext in [".pdf", ".txt"]:
-            logger.info(f"Processing {effective_ext.upper()} file")
+            logger.info(f"Processing {effective_ext.upper()}")
             extracted_markdown_from_llm = ai_extract_text(temp_processing_file_path)
             if extracted_markdown_from_llm is None:
-                logger.error(f"Text extraction failed for {effective_ext}")
-                raise ValueError(f"Text extraction failed for {effective_ext}.")
+                logger.error(f"Extraction failed for {effective_ext}")
+                return create_analysis_error_response(
+                    "EXTRACTION_ERROR",
+                    f"Failed to extract text from {effective_ext} file",
+                    status_code=500
+                )
             original_contract_markdown = extracted_markdown_from_llm
             analysis_input_text = original_contract_markdown
             if extracted_markdown_from_llm:
@@ -158,61 +203,83 @@ def analyze_file():
                     flags=re.MULTILINE
                 ).strip()
             original_format_to_store = effective_ext.replace(".", "")
-            logger.info(f"Extracted {len(original_contract_plain)} characters from {effective_ext.upper()}")
+            extracted_chars = len(original_contract_plain)
+            logger.info(f"Extracted {extracted_chars} chars from {effective_ext.upper()}")
         else:
-            logger.error(f"Unsupported file type: {effective_ext}")
-            return jsonify({"error": f"Unsupported file type after upload: {effective_ext}"}), 400
+            logger.error(f"Unsupported type: {effective_ext}")
+            return create_analysis_error_response(
+                "VALIDATION_ERROR",
+                f"Unsupported file type: {effective_ext}",
+                status_code=400
+            )
+        
+        timer.end_step()
 
-        # Detect language
         if original_contract_plain and len(original_contract_plain) > 20:
             try:
                 detected_lang = 'ar' if detect(original_contract_plain[:1000]) == 'ar' else 'en'
-                logger.info(f"Detected contract language: {detected_lang}")
+                logger.debug(f"Language: {detected_lang}")
             except LangDetectException:
-                logger.warning("Language detection failed, defaulting to Arabic")
+                logger.debug("Language detection failed, defaulting to Arabic")
 
-        # Load and format system prompt
         from config.default import DefaultConfig
         sys_prompt = DefaultConfig.SYS_PROMPT
         if not sys_prompt:
-            logger.error("System prompt not loaded - check prompts/ directory")
-            raise ValueError("System prompt configuration error.")
+            logger.error("System prompt not loaded")
+            return create_analysis_error_response(
+                "CONFIG_ERROR",
+                "System prompt configuration error",
+                status_code=500
+            )
         
-        # Retrieve AAOIFI context via file search
+        timer.start_step("file_search")
         aaoifi_context = ""
+        aaoifi_chunks = []
+        file_search_status = "in_progress"
+        
         try:
-            logger.info("Retrieving AAOIFI standards context...")
+            logger.info("Starting AAOIFI context retrieval")
             from app.services.file_search import FileSearchService
             file_search_service = FileSearchService()
             aaoifi_chunks, extracted_terms = file_search_service.search_chunks(analysis_input_text, top_k=10)
             
             if aaoifi_chunks:
-                logger.info(f"Retrieved {len(aaoifi_chunks)} AAOIFI chunks")
+                logger.info(f"Retrieved {len(aaoifi_chunks)} chunks")
                 chunk_texts = []
                 for idx, chunk in enumerate(aaoifi_chunks, 1):
                     chunk_text = chunk.get("chunk_text", "")
                     if chunk_text:
                         chunk_texts.append(f"[معيار AAOIFI {idx}]\n{chunk_text}")
                 aaoifi_context = "\n\n".join(chunk_texts) if chunk_texts else ""
-                logger.info(f"AAOIFI context prepared: {len(aaoifi_context)} characters")
+                logger.info(f"Context size: {len(aaoifi_context)} chars")
+                file_search_status = "success"
             else:
-                logger.warning("No AAOIFI chunks retrieved, proceeding without context")
+                logger.warning("No chunks retrieved")
+                file_search_status = "no_results"
         except Exception as e:
-            logger.warning(f"File search failed, proceeding without AAOIFI context: {e}")
+            logger.warning(f"File search failed: {e}")
+            file_search_status = f"error: {str(e)[:50]}"
             aaoifi_context = ""
         
-        # Format system prompt with output language and AAOIFI context
+        timer.end_step()
+        
         formatted_sys_prompt = sys_prompt.format(
             output_language=detected_lang,
             aaoifi_context=aaoifi_context
         )
         
         if not analysis_input_text or not analysis_input_text.strip():
-            logger.error("Analysis input text is empty")
-            raise ValueError("Analysis input text is empty.")
+            logger.error("Empty analysis input")
+            return create_analysis_error_response(
+                "EXTRACTION_ERROR",
+                "No text could be extracted from the file",
+                status_code=400
+            )
 
-        # Send to AI for analysis
-        logger.info("Sending contract to LLM for analysis with AAOIFI context")
+        timer.start_step("ai_analysis")
+        analysis_status = "in_progress"
+        logger.info("Sending to LLM for analysis")
+        
         external_response_text = send_text_to_remote_api(
             analysis_input_text, 
             f"{session_id_local}_analysis_final", 
@@ -220,18 +287,25 @@ def analyze_file():
         )
         
         if not external_response_text or external_response_text.startswith(("ERROR_PROMPT_BLOCKED", "ERROR_CONTENT_BLOCKED")):
-            logger.error(f"Invalid/blocked response from analysis: {external_response_text}")
-            raise ValueError(f"Invalid/blocked response from analysis: {external_response_text or 'No response'}")
+            logger.error(f"LLM response blocked: {external_response_text}")
+            analysis_status = "blocked"
+            return create_analysis_error_response(
+                "AI_ERROR",
+                "Analysis was blocked by content filter",
+                {"response_code": external_response_text},
+                status_code=500
+            )
 
-        # Parse analysis results
-        logger.info("Parsing LLM analysis results")
+        logger.info("Parsing analysis results")
         analysis_results_list = json.loads(clean_model_response(external_response_text))
         if not isinstance(analysis_results_list, list):
             analysis_results_list = []
 
-        logger.info(f"Analysis completed with {len(analysis_results_list)} terms identified")
+        analysis_status = "success"
+        logger.info(f"Analysis complete: {len(analysis_results_list)} terms")
+        timer.end_step()
 
-        # Save analysis results to temp JSON file
+        timer.start_step("save_results")
         with tempfile.NamedTemporaryFile(
             mode='w', 
             encoding='utf-8', 
@@ -242,7 +316,6 @@ def analyze_file():
             json.dump(analysis_results_list, tmp_json_file, ensure_ascii=False, indent=2)
             temp_analysis_results_path = tmp_json_file.name
 
-        # Upload analysis results to Cloudinary
         if temp_analysis_results_path and CLOUDINARY_AVAILABLE:
             results_safe_public_id = generate_safe_public_id(file_base, "analysis_results")
             results_upload_result = upload_to_cloudinary_helper(
@@ -259,9 +332,8 @@ def analyze_file():
                     "format": results_upload_result.get("format", "json"),
                     "user_facing_filename": "analysis_results.json"
                 }
-                logger.info("Analysis results uploaded to Cloudinary")
+                logger.debug("Results uploaded to Cloudinary")
 
-        # Save contract document to database
         contract_doc = {
             "_id": session_id_local,
             "session_id": session_id_local,
@@ -281,9 +353,8 @@ def analyze_file():
             "pdf_preview_info": {}
         }
         contracts_collection.insert_one(contract_doc)
-        logger.info(f"Contract document saved to database for session: {session_id_local}")
+        logger.info(f"Saved to database: {session_id_local}")
 
-        # Save terms to database
         terms_to_insert = [
             {"session_id": session_id_local, **term} 
             for term in analysis_results_list 
@@ -291,16 +362,30 @@ def analyze_file():
         ]
         if terms_to_insert:
             terms_collection.insert_many(terms_to_insert)
-            logger.info(f"Inserted {len(terms_to_insert)} terms to database")
+            logger.debug(f"Inserted {len(terms_to_insert)} terms")
+        
+        timer.end_step()
 
-        # Build response matching old API format exactly
+        timing_summary = timer.get_summary()
+        log_request_summary(logger, {
+            "trace_id": get_trace_id(),
+            "file_size": file_size,
+            "extracted_chars": extracted_chars,
+            "analysis_status": analysis_status,
+            "file_search_status": file_search_status,
+            "total_time": timing_summary["total_time_seconds"],
+            "step_times": timing_summary["steps"]
+        })
+
         response_payload = {
+            "status": "success",
             "message": "Contract analyzed successfully.",
             "analysis_results": analysis_results_list,
             "session_id": session_id_local,
             "original_contract_plain": original_contract_plain,
             "detected_contract_language": detected_lang,
-            "original_cloudinary_url": original_cloudinary_info.get("url") if original_cloudinary_info else None
+            "original_cloudinary_url": original_cloudinary_info.get("url") if original_cloudinary_info else None,
+            "trace_id": get_trace_id()
         }
         response = jsonify(response_payload)
         response.set_cookie(
@@ -312,30 +397,58 @@ def analyze_file():
             secure=request.is_secure
         )
 
-        logger.info(f"Analysis completed successfully for session: {session_id_local}")
+        logger.info(f"Analysis successful: {session_id_local}")
         return response
 
     except json.JSONDecodeError as je:
-        logger.error(f"JSON parse error in analysis for session {session_id_local}: {je}")
-        traceback.print_exc()
-        return jsonify({"error": f"Failed to parse analysis response: {str(je)}"}), 500
+        analysis_status = "json_error"
+        logger.exception(f"JSON parse error: {je}")
+        timing_summary = timer.get_summary()
+        log_request_summary(logger, {
+            "trace_id": get_trace_id(),
+            "file_size": file_size,
+            "extracted_chars": extracted_chars,
+            "analysis_status": analysis_status,
+            "file_search_status": file_search_status,
+            "total_time": timing_summary["total_time_seconds"],
+            "step_times": timing_summary["steps"]
+        })
+        return create_analysis_error_response(
+            "PARSE_ERROR",
+            "Failed to parse analysis response",
+            {"error_detail": str(je)},
+            status_code=500
+        )
         
     except Exception as e:
-        logger.error(f"Analysis failed for session {session_id_local}: {e}")
-        traceback.print_exc()
-        return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
+        analysis_status = "exception"
+        logger.exception(f"Analysis failed: {e}")
+        timing_summary = timer.get_summary()
+        log_request_summary(logger, {
+            "trace_id": get_trace_id(),
+            "file_size": file_size,
+            "extracted_chars": extracted_chars,
+            "analysis_status": analysis_status,
+            "file_search_status": file_search_status,
+            "total_time": timing_summary["total_time_seconds"],
+            "step_times": timing_summary["steps"]
+        })
+        return create_analysis_error_response(
+            "ANALYSIS_ERROR",
+            f"Analysis failed: {str(e)}",
+            status_code=500
+        )
         
     finally:
-        # Cleanup temporary files
         if temp_processing_file_path and os.path.exists(temp_processing_file_path):
             try:
                 os.remove(temp_processing_file_path)
-                logger.debug("Cleaned up temporary processing file")
+                logger.debug("Cleaned temp processing file")
             except Exception as e_clean:
-                logger.warning(f"Error deleting temp original file: {e_clean}")
+                logger.debug(f"Temp file cleanup error: {e_clean}")
         if temp_analysis_results_path and os.path.exists(temp_analysis_results_path):
             try:
                 os.remove(temp_analysis_results_path)
-                logger.debug("Cleaned up temporary analysis results file")
+                logger.debug("Cleaned temp analysis file")
             except Exception as e_clean:
-                logger.warning(f"Error deleting temp analysis JSON file: {e_clean}")
+                logger.debug(f"Temp analysis cleanup error: {e_clean}")
