@@ -87,8 +87,10 @@ context/                   # AAOIFI standards documents
 
 **Required Secrets:**
 - `GEMINI_API_KEY` - Google Generative AI key
-- `MONGODB_URI` - MongoDB connection string
-- `CLOUDINARY_URL` - Cloudinary config
+- `MONGO_URI` - MongoDB connection string
+- `CLOUDINARY_CLOUD_NAME` - Cloudinary cloud name
+- `CLOUDINARY_API_KEY` - Cloudinary API key
+- `CLOUDINARY_API_SECRET` - Cloudinary API secret
 
 **Optional:**
 - `FLASK_SECRET_KEY` - Session secret
@@ -113,6 +115,14 @@ Server runs on port 5000.
 7. User can interact, modify, and generate new versions
 
 ## Recent Updates
+
+### December 7, 2025 - DefaultConfig Access Pattern Fix
+- **Fixed**: Changed all files to access prompts as class attributes instead of instance attributes
+  - `app/services/file_search.py` - Uses property methods to access `DefaultConfig.EXTRACT_KEY_TERMS_PROMPT` and `DefaultConfig.FILE_SEARCH_PROMPT`
+  - `app/services/ai_service.py` - Changed to `DefaultConfig.EXTRACTION_PROMPT` and `DefaultConfig.SYS_PROMPT`
+  - `app/routes/interaction.py` - Changed to `DefaultConfig.INTERACTION_PROMPT_SHARIA` and `DefaultConfig.REVIEW_MODIFICATION_PROMPT_SHARIA`
+  - `app/routes/analysis_upload.py` - Changed to `DefaultConfig.SYS_PROMPT`
+- **Status**: Backend running successfully with all services connected (MongoDB, Cloudinary, Google GenAI)
 
 ### November 30, 2025 - Missing Prompts Fix
 - **Fixed**: Added missing `EXTRACT_KEY_TERMS_PROMPT` and `FILE_SEARCH_PROMPT` to config/default.py
