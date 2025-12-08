@@ -123,6 +123,21 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### December 8, 2025 - Expert Feedback Collection Storage
+- **Changed**: Expert feedback now stored in dedicated `expert_feedback` collection
+  - Previously embedded in contracts collection as an array
+  - Now uses separate collection for better querying and management
+- **Schema**: Complete expert feedback document with fields:
+  - `session_id`, `term_id`, `original_term_text_snapshot`
+  - `expert_user_id`, `expert_username`, `feedback_timestamp`
+  - `ai_initial_analysis_assessment` (object with original AI analysis)
+  - `expert_verdict_is_valid_sharia`, `expert_comment_on_term`
+  - `expert_corrected_sharia_issue`, `expert_corrected_reference`
+  - `expert_final_suggestion_for_term`
+  - Original AI fields: `original_ai_is_valid_sharia`, `original_ai_sharia_issue`, `original_ai_modified_term`, `original_ai_reference_number`
+- **Added**: Auto-population of AI analysis snapshot from term data
+- **Preserved**: Term update with `has_expert_feedback` flag for downstream compatibility
+
 ### December 8, 2025 - Confirmed Terms & Expert Feedback Improvements
 - **Fixed**: `expert_name` now optional in `/feedback/expert` endpoint
   - Previously caused "missing field" errors when not provided
