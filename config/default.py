@@ -49,10 +49,16 @@ class DefaultConfig:
     CLOUDINARY_MARKED_CONTRACTS_SUBFOLDER: str = "marked_contracts"
     CLOUDINARY_PDF_PREVIEWS_SUBFOLDER: str = "pdf_previews"
     
-    LIBREOFFICE_PATH: str = os.environ.get("LIBREOFFICE_PATH", "libreoffice")
+    LIBREOFFICE_PATH: str = os.environ.get("LIBREOFFICE_PATH", "")
     
-    TEMP_PROCESSING_FOLDER: str = os.environ.get("TEMP_PROCESSING_FOLDER", "/tmp/shariaa_temp")
-    PDF_PREVIEW_FOLDER: str = os.environ.get("PDF_PREVIEW_FOLDER", "/tmp/pdf_previews")
+    TEMP_PROCESSING_FOLDER: str = os.environ.get(
+        "TEMP_PROCESSING_FOLDER",
+        os.path.join(os.environ.get('TEMP', 'C:\\tmp') if os.name == 'nt' else '/tmp', 'shariaa_temp')
+    )
+    PDF_PREVIEW_FOLDER: str = os.environ.get(
+        "PDF_PREVIEW_FOLDER",
+        os.path.join(os.environ.get('TEMP', 'C:\\tmp') if os.name == 'nt' else '/tmp', 'pdf_previews')
+    )
     
     GEMINI_FILE_SEARCH_API_KEY: str | None = os.environ.get("GEMINI_FILE_SEARCH_API_KEY")
     FILE_SEARCH_STORE_ID: str | None = os.environ.get("FILE_SEARCH_STORE_ID")

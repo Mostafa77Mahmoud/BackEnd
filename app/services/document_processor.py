@@ -387,20 +387,72 @@ def create_docx_from_llm_markdown(
                     continue
                 
                 search_start_pos = current_markdown_pos
-                term_text_pattern = re.escape(term_text_original).replace(r'\\n', r'\s*\\n\s*') 
-                term_text_pattern = term_text_pattern.replace(r'\n', r'\s*\n\s*') 
+                
+                def normalize_text(text):
+                    """Normalize text for matching - remove extra whitespace."""
+                    return ' '.join(text.split())
+                
+                def find_term_flexible(text, search_text, start_pos):
+                    """Find term with flexible whitespace matching."""
+                    normalized_search = normalize_text(search_text)
+                    search_words = normalized_search.split()[:10]
+                    if not search_words:
+                        return None
+                    
+                    first_words = ' '.join(search_words[:3]) if len(search_words) >= 3 else ' '.join(search_words)
+                    
+                    pos = start_pos
+                    while pos < len(text):
+                        idx = text.find(search_words[0], pos)
+                        if idx == -1:
+                            break
+                        
+                        chunk = text[idx:idx + len(search_text) + 200]
+                        if normalize_text(chunk).startswith(normalized_search[:100]):
+                            end_pos = idx + len(search_text)
+                            for end_offset in range(-20, 50):
+                                test_end = end_pos + end_offset
+                                if test_end <= len(text):
+                                    chunk_to_test = text[idx:test_end]
+                                    if normalize_text(chunk_to_test) == normalized_search:
+                                        return (idx, chunk_to_test)
+                            return (idx, text[idx:idx + len(search_text)])
+                        pos = idx + 1
+                    
+                    return None
                 
                 match = None
                 try:
+                    term_text_pattern = re.escape(term_text_original).replace(r'\\n', r'\s*\\n\s*') 
+                    term_text_pattern = term_text_pattern.replace(r'\n', r'\s*\n\s*')
+                    term_text_pattern = term_text_pattern.replace(r'\ ', r'\s+')
                     match = re.search(term_text_pattern, processed_markdown_text[search_start_pos:], re.DOTALL)
                 except re.error as re_err:
-                    logger.warning(f"Regex error for term '{term_data.get('term_id')}': {re_err}. Falling back to string find.")
-                    _found_pos = processed_markdown_text.find(term_text_original, search_start_pos)
-                    if _found_pos != -1:
-                        class FallbackMatch:
-                            def start(self): return _found_pos - search_start_pos
-                            def group(self, _): return term_text_original
-                        match = FallbackMatch()
+                    logger.warning(f"Regex error for term '{term_data.get('term_id')}': {re_err}. Trying flexible match.")
+                    match = None
+                
+                if not match:
+                    flexible_result = find_term_flexible(processed_markdown_text, term_text_original, search_start_pos)
+                    if flexible_result:
+                        found_pos, matched_text = flexible_result
+                        class FlexibleMatch:
+                            def __init__(self, pos, text, start_pos):
+                                self._pos = pos - start_pos
+                                self._text = text
+                            def start(self): return self._pos
+                            def group(self, _=0): return self._text
+                        match = FlexibleMatch(found_pos, matched_text, search_start_pos)
+                    else:
+                        _found_pos = processed_markdown_text.find(term_text_original[:50], search_start_pos)
+                        if _found_pos != -1:
+                            actual_text = processed_markdown_text[_found_pos:_found_pos + len(term_text_original)]
+                            class FallbackMatch:
+                                def __init__(self, pos, text, start_pos):
+                                    self._pos = pos - start_pos
+                                    self._text = text
+                                def start(self): return self._pos
+                                def group(self, _=0): return self._text
+                            match = FallbackMatch(_found_pos, actual_text, search_start_pos)
 
                 if match:
                     found_pos_relative = match.start()
@@ -660,11 +712,53 @@ def create_docx_from_llm_markdown(
         raise ValueError(f"فشل إنشاء DOCX: {e}")
 
 
+def _find_libreoffice_path() -> str:
+    """Find LibreOffice executable path - cross-platform."""
+    try:
+        libreoffice_path = current_app.config.get('LIBREOFFICE_PATH', '')
+    except RuntimeError:
+        libreoffice_path = ''
+    
+    if libreoffice_path:
+        clean_path = libreoffice_path.strip()
+        if clean_path.startswith('r"') and clean_path.endswith('"'):
+            clean_path = clean_path[2:-1]
+        elif clean_path.startswith('"') and clean_path.endswith('"'):
+            clean_path = clean_path[1:-1]
+        if os.path.exists(clean_path):
+            return clean_path
+    
+    if os.name == 'nt':
+        windows_paths = [
+            r"C:\Program Files\LibreOffice\program\soffice.exe",
+            r"C:\Program Files (x86)\LibreOffice\program\soffice.exe",
+            os.path.expandvars(r"%PROGRAMFILES%\LibreOffice\program\soffice.exe"),
+            os.path.expandvars(r"%PROGRAMFILES(X86)%\LibreOffice\program\soffice.exe"),
+        ]
+        for path in windows_paths:
+            if os.path.exists(path):
+                logger.info(f"Found LibreOffice at: {path}")
+                return path
+        return "soffice.exe"
+    else:
+        linux_paths = [
+            "/usr/bin/libreoffice",
+            "/usr/bin/soffice",
+            "/usr/local/bin/libreoffice",
+            "/usr/local/bin/soffice",
+        ]
+        for path in linux_paths:
+            if os.path.exists(path):
+                logger.info(f"Found LibreOffice at: {path}")
+                return path
+        return "libreoffice"
+
+
 def convert_docx_to_pdf(docx_path: str, output_folder: str) -> str:
     """
     Converts a DOCX file to PDF using LibreOffice directly.
     Returns the path to the generated PDF, or raises an exception on failure.
-    Requires LIBREOFFICE_PATH to be set in config or soffice to be in PATH.
+    Automatically finds LibreOffice on Windows and Linux.
     """
     if not os.path.exists(docx_path):
         logger.error(f"DOCX file not found for PDF conversion: {docx_path}")
@@ -675,12 +769,7 @@ def convert_docx_to_pdf(docx_path: str, output_folder: str) -> str:
     pdf_filename = os.path.splitext(os.path.basename(docx_path))[0] + ".pdf"
     pdf_output_path = os.path.join(output_folder, pdf_filename)
 
-    try:
-        libreoffice_path = current_app.config.get('LIBREOFFICE_PATH')
-    except RuntimeError:
-        libreoffice_path = None
-    
-    soffice_cmd = libreoffice_path or "soffice"
+    soffice_cmd = _find_libreoffice_path()
 
     command = [
         soffice_cmd,
