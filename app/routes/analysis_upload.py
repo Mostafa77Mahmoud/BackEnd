@@ -374,8 +374,11 @@ def analyze_file():
         except Exception as e:
             logger.warning(f"File search failed: {e}")
             file_search_status = f"error: {str(e)[:50]}"
-            aaoifi_context = ""
             tracer.record_error("file_search_error", str(e))
+            # IMPORTANT: Do NOT reset aaoifi_context here - preserve any partial results
+            # that may have been retrieved before the failure
+            if not aaoifi_context:
+                logger.warning("No AAOIFI context available due to file search failure")
         
         tracer.end_step({
             "status": file_search_status,
@@ -407,10 +410,11 @@ def analyze_file():
         tracer.start_step("5_ai_analysis", {
             "input_text_length": len(analysis_input_text) if analysis_input_text else 0,
             "prompt_length": len(formatted_sys_prompt),
+            "aaoifi_context_length": len(aaoifi_context),
             "detected_language": detected_lang
         })
         analysis_status = "in_progress"
-        logger.info("Sending to LLM for analysis")
+        logger.info(f"Sending to LLM for analysis (contract: {len(analysis_input_text)} chars, AAOIFI context: {len(aaoifi_context)} chars, system prompt: {len(formatted_sys_prompt)} chars)")
         
         external_response_text = send_text_to_remote_api(
             analysis_input_text, 

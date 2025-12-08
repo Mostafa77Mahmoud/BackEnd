@@ -595,14 +595,23 @@ class FileSearchService:
         except Exception as e:
             logger.error(f"Search pipeline failed: {e}")
             
-            if general_chunks or extracted_terms:
+            # Merge any collected chunks (general + sensitive) before returning
+            collected_chunks = general_chunks.copy()
+            if sensitive_chunks:
+                # Add sensitive chunks that aren't duplicates
+                existing_texts = {c.get("chunk_text", "") for c in collected_chunks}
+                for chunk in sensitive_chunks:
+                    if chunk.get("chunk_text", "") not in existing_texts:
+                        collected_chunks.append(chunk)
+            
+            if collected_chunks or extracted_terms:
                 logger.warning("PARTIAL RESULTS: Returning data collected before failure")
                 
-                for idx, chunk in enumerate(general_chunks):
+                for idx, chunk in enumerate(collected_chunks):
                     chunk["uid"] = f"chunk_{idx + 1}"
                 
-                logger.info(f"Returning partial: {len(general_chunks)} chunks, {len(extracted_terms)} terms")
-                return general_chunks, extracted_terms
+                logger.info(f"Returning partial: {len(collected_chunks)} chunks ({len(general_chunks)} general + {len(sensitive_chunks)} sensitive), {len(extracted_terms)} terms")
+                return collected_chunks, extracted_terms
             
             raise
 

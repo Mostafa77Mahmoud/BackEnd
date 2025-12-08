@@ -116,7 +116,7 @@ def send_text_to_remote_api(text_payload: str, session_id_key: str, formatted_sy
         logger.warning(f"Empty text_payload for session_id_key {session_id_key}")
         return ""
 
-    logger.info(f"Sending text to LLM for session: {session_id_key}, payload length: {len(text_payload)}")
+    logger.info(f"Sending text to LLM for session: {session_id_key}, payload length: {len(text_payload)}, system prompt length: {len(formatted_system_prompt) if formatted_system_prompt else 0}")
     
     try:
         chat = get_chat_session(session_id_key, system_instruction=formatted_system_prompt, force_new=True)
