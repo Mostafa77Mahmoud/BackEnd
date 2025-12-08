@@ -9,7 +9,7 @@ import datetime
 from flask import Blueprint, request, jsonify
 
 # Import services
-from app.services.database import get_contracts_collection, get_terms_collection
+from app.services.database import get_contracts_collection, get_terms_collection, get_expert_feedback_collection
 
 logger = logging.getLogger(__name__)
 
@@ -137,13 +137,14 @@ def get_user_stats():
 
 @analysis_bp.route('/feedback/expert', methods=['POST'])
 def submit_expert_feedback():
-    """Submit expert feedback on analysis."""
+    """Submit expert feedback on analysis to the dedicated expert_feedback collection."""
     logger.info("Processing expert feedback submission")
     
     contracts_collection = get_contracts_collection()
     terms_collection = get_terms_collection()
+    expert_feedback_collection = get_expert_feedback_collection()
     
-    if contracts_collection is None:
+    if expert_feedback_collection is None:
         return jsonify({"error": "Database service unavailable."}), 503
     
     if not request.is_json:
@@ -152,76 +153,91 @@ def submit_expert_feedback():
     try:
         request_data = request.get_json()
         
-        # Support both old format (feedback_text) and new format (feedback_data with nested structure)
         session_id = request_data.get("session_id")
         term_id = request_data.get("term_id")
         
         if not session_id:
             return jsonify({"error": "Missing required field: session_id"}), 400
         
+        if not term_id:
+            return jsonify({"error": "Missing required field: term_id"}), 400
+        
         # Verify session exists
-        session_doc = contracts_collection.find_one({"_id": session_id})
-        if not session_doc:
-            return jsonify({"error": "Session not found."}), 404
+        if contracts_collection is not None:
+            session_doc = contracts_collection.find_one({"_id": session_id})
+            if not session_doc:
+                return jsonify({"error": "Session not found."}), 404
         
-        # Handle new frontend format with feedback_data nested structure
-        feedback_data_nested = request_data.get("feedback_data")
+        # Get the term data to capture original AI analysis
+        term_doc = None
+        if terms_collection is not None:
+            term_doc = terms_collection.find_one({"session_id": session_id, "term_id": term_id})
         
-        if feedback_data_nested:
-            # New format from frontend
-            feedback_doc = {
-                "term_id": term_id,
-                "ai_analysis_approved": feedback_data_nested.get("aiAnalysisApproved"),
-                "expert_is_valid_sharia": feedback_data_nested.get("expertIsValidSharia"),
-                "expert_comment": feedback_data_nested.get("expertComment", ""),
-                "expert_corrected_sharia_issue": feedback_data_nested.get("expertCorrectedShariaIssue"),
-                "expert_corrected_reference": feedback_data_nested.get("expertCorrectedReference"),
-                "expert_corrected_suggestion": feedback_data_nested.get("expertCorrectedSuggestion"),
-                "submitted_at": datetime.datetime.now()
-            }
-            
-            # Update term with expert feedback if term_id is provided
-            if term_id and terms_collection is not None:
-                terms_collection.update_one(
-                    {"session_id": session_id, "term_id": term_id},
-                    {"$set": {
-                        "has_expert_feedback": True,
-                        "expert_override_is_valid_sharia": feedback_data_nested.get("expertIsValidSharia"),
-                        "expert_feedback_comment": feedback_data_nested.get("expertComment", "")
-                    }}
-                )
-        else:
-            # Old format with feedback_text (backward compatibility)
-            feedback_text = request_data.get("feedback_text")
-            if not feedback_text:
-                return jsonify({"error": "Missing required field: feedback_text or feedback_data"}), 400
-            
-            feedback_doc = {
-                "term_id": term_id,
-                "expert_name": request_data.get("expert_name", ""),
-                "feedback_text": feedback_text,
-                "rating": request_data.get("rating"),
-                "submitted_at": datetime.datetime.now()
+        # Get feedback data from request
+        feedback_data_nested = request_data.get("feedback_data", {})
+        
+        # Get original term text snapshot
+        original_term_text = request_data.get("original_term_text_snapshot", "")
+        if not original_term_text and term_doc:
+            original_term_text = term_doc.get("original_text", term_doc.get("text", ""))
+        
+        # Get expert info
+        expert_user_id = request_data.get("expert_user_id", "default_expert_id")
+        expert_username = request_data.get("expert_username", "Default Expert")
+        
+        # Build AI initial analysis assessment object from term data
+        ai_initial_analysis_assessment = {}
+        if term_doc:
+            ai_initial_analysis_assessment = {
+                "is_valid_sharia": term_doc.get("is_valid_sharia"),
+                "sharia_issue": term_doc.get("sharia_issue", term_doc.get("issue", "")),
+                "modified_term": term_doc.get("modified_term", term_doc.get("suggested_modification", "")),
+                "reference_number": term_doc.get("reference_number", term_doc.get("reference", ""))
             }
         
-        # Generate feedback ID
-        import uuid
-        feedback_id = str(uuid.uuid4())[:8]
-        feedback_doc["feedback_id"] = feedback_id
+        # Create the feedback document with the specified schema
+        feedback_doc = {
+            "session_id": session_id,
+            "term_id": term_id,
+            "original_term_text_snapshot": original_term_text,
+            "expert_user_id": expert_user_id,
+            "expert_username": expert_username,
+            "feedback_timestamp": datetime.datetime.utcnow(),
+            "ai_initial_analysis_assessment": ai_initial_analysis_assessment,
+            "expert_verdict_is_valid_sharia": feedback_data_nested.get("expertIsValidSharia", feedback_data_nested.get("expert_verdict_is_valid_sharia")),
+            "expert_comment_on_term": feedback_data_nested.get("expertComment", feedback_data_nested.get("expert_comment_on_term", "")),
+            "expert_corrected_sharia_issue": feedback_data_nested.get("expertCorrectedShariaIssue", feedback_data_nested.get("expert_corrected_sharia_issue")),
+            "expert_corrected_reference": feedback_data_nested.get("expertCorrectedReference", feedback_data_nested.get("expert_corrected_reference")),
+            "expert_final_suggestion_for_term": feedback_data_nested.get("expertCorrectedSuggestion", feedback_data_nested.get("expert_final_suggestion_for_term")),
+            "original_ai_is_valid_sharia": ai_initial_analysis_assessment.get("is_valid_sharia"),
+            "original_ai_sharia_issue": ai_initial_analysis_assessment.get("sharia_issue"),
+            "original_ai_modified_term": ai_initial_analysis_assessment.get("modified_term"),
+            "original_ai_reference_number": ai_initial_analysis_assessment.get("reference_number")
+        }
         
-        # Update session with expert feedback
-        contracts_collection.update_one(
-            {"_id": session_id},
-            {"$push": {"expert_feedback": feedback_doc}}
-        )
+        # Insert into expert_feedback collection
+        result = expert_feedback_collection.insert_one(feedback_doc)
+        feedback_id = str(result.inserted_id)
+        
+        # Update term with expert feedback flag if term exists
+        if term_doc and terms_collection is not None:
+            terms_collection.update_one(
+                {"session_id": session_id, "term_id": term_id},
+                {"$set": {
+                    "has_expert_feedback": True,
+                    "expert_override_is_valid_sharia": feedback_doc["expert_verdict_is_valid_sharia"],
+                    "expert_feedback_comment": feedback_doc["expert_comment_on_term"]
+                }}
+            )
         
         logger.info(f"Expert feedback submitted for session: {session_id}, term: {term_id}")
         return jsonify({
             "success": True,
             "message": "Expert feedback submitted successfully.",
             "session_id": session_id,
+            "term_id": term_id,
             "feedback_id": feedback_id,
-            "submitted_at": feedback_doc["submitted_at"].isoformat()
+            "submitted_at": feedback_doc["feedback_timestamp"].isoformat()
         })
         
     except Exception as e:
