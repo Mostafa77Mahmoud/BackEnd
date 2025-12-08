@@ -123,6 +123,14 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### December 8, 2025 - File Search Optimization (Single Call Only)
+- **Fixed**: File search now only runs once during the initial analysis step
+  - Modified `analysis_upload.py`: Now saves `aaoifi_context`, `aaoifi_chunks`, and `file_search_extracted_terms` to the session document in MongoDB
+  - Modified `interaction.py`: Removed `FileSearchService` calls from `/interact` and `/review_modification` endpoints, now reads saved context from database
+  - Modified `generation.py`: Removed `FileSearchService` call from `/generate_modified_contract` endpoint, now reads saved context from database
+- **Flow**: Upload contract → File search runs → Context saved to DB → All subsequent operations (interact, review, generate) use saved context
+- **Benefit**: Reduced API calls, faster responses, consistent context across session
+
 ### December 7, 2025 - FileSearchService Graceful Handling
 - **Fixed**: Added null checks in `app/services/file_search.py` for when `GEMINI_FILE_SEARCH_API_KEY` is not configured
   - `extract_key_terms()`: Returns empty list `[]` if `self.client` is None
