@@ -24,7 +24,8 @@ import logging
 from flask import current_app
 
 from app.utils.file_helpers import ensure_dir, clean_filename
-from app.utils.text_processing import clean_model_response
+from app.utils.text_processing import clean_model_response, create_text_matcher, fast_normalize_text
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -378,81 +379,37 @@ def create_docx_from_llm_markdown(
             processed_markdown_text = "\n".join(lines[1:]) 
         
         if isinstance(terms_for_marking, list) and terms_for_marking: 
-            logger.info(f"DOC_PROCESSING: Using new list-based term marking logic for PDF/TXT. {len(terms_for_marking)} terms.")
+            logger.info(f"DOC_PROCESSING: Using optimized term marking logic. {len(terms_for_marking)} terms.")
             current_markdown_pos = 0
             
+            text_matcher = create_text_matcher(processed_markdown_text)
+            total_start_time = time.time()
+            
             for term_idx, term_data in enumerate(terms_for_marking):
+                term_start_time = time.time()
                 term_text_original = term_data.get("term_text", "") 
                 if not term_text_original.strip(): 
                     continue
                 
                 search_start_pos = current_markdown_pos
                 
-                def normalize_text(text):
-                    """Normalize text for matching - remove extra whitespace."""
-                    return ' '.join(text.split())
-                
-                def find_term_flexible(text, search_text, start_pos):
-                    """Find term with flexible whitespace matching."""
-                    normalized_search = normalize_text(search_text)
-                    search_words = normalized_search.split()[:10]
-                    if not search_words:
-                        return None
-                    
-                    first_words = ' '.join(search_words[:3]) if len(search_words) >= 3 else ' '.join(search_words)
-                    
-                    pos = start_pos
-                    while pos < len(text):
-                        idx = text.find(search_words[0], pos)
-                        if idx == -1:
-                            break
-                        
-                        chunk = text[idx:idx + len(search_text) + 200]
-                        if normalize_text(chunk).startswith(normalized_search[:100]):
-                            end_pos = idx + len(search_text)
-                            for end_offset in range(-20, 50):
-                                test_end = end_pos + end_offset
-                                if test_end <= len(text):
-                                    chunk_to_test = text[idx:test_end]
-                                    if normalize_text(chunk_to_test) == normalized_search:
-                                        return (idx, chunk_to_test)
-                            return (idx, text[idx:idx + len(search_text)])
-                        pos = idx + 1
-                    
-                    return None
+                match_result = text_matcher.find_term(term_text_original, search_start_pos)
                 
                 match = None
-                try:
-                    term_text_pattern = re.escape(term_text_original).replace(r'\\n', r'\s*\\n\s*') 
-                    term_text_pattern = term_text_pattern.replace(r'\n', r'\s*\n\s*')
-                    term_text_pattern = term_text_pattern.replace(r'\ ', r'\s+')
-                    match = re.search(term_text_pattern, processed_markdown_text[search_start_pos:], re.DOTALL)
-                except re.error as re_err:
-                    logger.warning(f"Regex error for term '{term_data.get('term_id')}': {re_err}. Trying flexible match.")
-                    match = None
+                if match_result:
+                    found_pos, end_pos, matched_text = match_result
+                    class OptimizedMatch:
+                        def __init__(self, pos, end, text, start_pos):
+                            self._pos = pos - start_pos
+                            self._end = end
+                            self._text = text
+                        def start(self): return self._pos
+                        def group(self, _=0): return self._text
+                    match = OptimizedMatch(found_pos, end_pos, matched_text, search_start_pos)
                 
-                if not match:
-                    flexible_result = find_term_flexible(processed_markdown_text, term_text_original, search_start_pos)
-                    if flexible_result:
-                        found_pos, matched_text = flexible_result
-                        class FlexibleMatch:
-                            def __init__(self, pos, text, start_pos):
-                                self._pos = pos - start_pos
-                                self._text = text
-                            def start(self): return self._pos
-                            def group(self, _=0): return self._text
-                        match = FlexibleMatch(found_pos, matched_text, search_start_pos)
-                    else:
-                        _found_pos = processed_markdown_text.find(term_text_original[:50], search_start_pos)
-                        if _found_pos != -1:
-                            actual_text = processed_markdown_text[_found_pos:_found_pos + len(term_text_original)]
-                            class FallbackMatch:
-                                def __init__(self, pos, text, start_pos):
-                                    self._pos = pos - start_pos
-                                    self._text = text
-                                def start(self): return self._pos
-                                def group(self, _=0): return self._text
-                            match = FallbackMatch(_found_pos, actual_text, search_start_pos)
+                term_elapsed = time.time() - term_start_time
+                if term_elapsed > 1.0:
+                    logger.warning(f"Slow term search: '{term_data.get('term_id')}' took {term_elapsed:.2f}s")
 
                 if match:
                     found_pos_relative = match.start()
@@ -517,6 +474,15 @@ def create_docx_from_llm_markdown(
                     current_markdown_pos = found_pos_absolute + len(matched_text_in_doc)
                 else:
                     logger.warning(f"Term '{term_data.get('term_id')}' text not found sequentially from pos {search_start_pos}")
+                    global_match = text_matcher.find_term(term_text_original, 0)
+                    if global_match:
+                        global_pos, global_end, _ = global_match
+                        logger.info(f"Term '{term_data.get('term_id')}' found at global pos {global_pos} (out of sequence)")
+                        if global_pos > current_markdown_pos:
+                            current_markdown_pos = global_pos
+            
+            total_elapsed = time.time() - total_start_time
+            logger.info(f"DOC_PROCESSING: Term marking completed in {total_elapsed:.2f}s for {len(terms_for_marking)} terms")
             
             if current_markdown_pos < len(processed_markdown_text):
                 remaining_text = processed_markdown_text[current_markdown_pos:]

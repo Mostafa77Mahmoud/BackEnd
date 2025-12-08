@@ -492,3 +492,158 @@ def generate_safe_public_id(base_name, prefix="", max_length=50):
         logger.error(f"Error generating safe public_id for '{base_name}': {e}")
         fallback_id = f"{prefix}_{uuid.uuid4().hex[:8]}"
         return fallback_id
+
+
+class OptimizedTextMatcher:
+    """
+    High-performance text matcher for Arabic/English contracts.
+    Uses simple string-based search with caching to avoid repeated normalization.
+    Preserves all structural markers (tables, IDs) for proper alignment.
+    """
+    
+    def __init__(self, source_text: str):
+        """Initialize with source text."""
+        self.source_text = source_text
+        self.source_len = len(source_text)
+        self._normalized_cache: dict[str, str] = {}
+    
+    def find_term(self, search_text: str, start_pos: int = 0) -> tuple[int, int, str] | None:
+        """
+        Find term in source text starting from start_pos.
+        Returns (start_pos, end_pos, matched_text) or None.
+        
+        Uses multiple search strategies with early termination for performance.
+        """
+        if not search_text or not search_text.strip() or start_pos >= self.source_len:
+            return None
+        
+        result = self._exact_search(search_text, start_pos)
+        if result:
+            return result
+        
+        result = self._normalized_search(search_text, start_pos)
+        if result:
+            return result
+        
+        result = self._prefix_search(search_text, start_pos)
+        if result:
+            return result
+        
+        return None
+    
+    def _exact_search(self, search_text: str, start_pos: int) -> tuple[int, int, str] | None:
+        """Try exact string match first (fastest)."""
+        idx = self.source_text.find(search_text, start_pos)
+        if idx != -1:
+            return (idx, idx + len(search_text), search_text)
+        
+        stripped = search_text.strip()
+        if stripped != search_text:
+            idx = self.source_text.find(stripped, start_pos)
+            if idx != -1:
+                return (idx, idx + len(stripped), stripped)
+        
+        return None
+    
+    def _normalized_search(self, search_text: str, start_pos: int) -> tuple[int, int, str] | None:
+        """Search using normalized text comparison."""
+        search_normalized = self._normalize_for_matching(search_text)
+        if not search_normalized or len(search_normalized) < 10:
+            return None
+        
+        first_word = search_normalized.split()[0] if search_normalized.split() else ""
+        if not first_word or len(first_word) < 3:
+            return None
+        
+        pos = start_pos
+        max_attempts = 100
+        attempts = 0
+        
+        while pos < self.source_len and attempts < max_attempts:
+            idx = self.source_text.find(first_word, pos)
+            if idx == -1:
+                break
+            
+            chunk_len = len(search_text) + 50
+            chunk = self.source_text[idx:min(idx + chunk_len, self.source_len)]
+            chunk_normalized = self._normalize_for_matching(chunk)
+            
+            if chunk_normalized.startswith(search_normalized):
+                end_pos = self._find_match_end(idx, search_text, search_normalized)
+                if end_pos > idx:
+                    matched = self.source_text[idx:end_pos]
+                    return (idx, end_pos, matched)
+            
+            pos = idx + 1
+            attempts += 1
+        
+        return None
+    
+    def _prefix_search(self, search_text: str, start_pos: int) -> tuple[int, int, str] | None:
+        """Fallback: search using first 50 characters."""
+        prefix = search_text[:50].strip() if len(search_text) > 50 else search_text.strip()
+        if not prefix:
+            return None
+        
+        idx = self.source_text.find(prefix, start_pos)
+        if idx != -1:
+            end_pos = idx + len(search_text)
+            if end_pos > self.source_len:
+                end_pos = self.source_len
+            matched = self.source_text[idx:end_pos]
+            return (idx, end_pos, matched)
+        
+        return None
+    
+    def _find_match_end(self, start_idx: int, original_text: str, normalized_search: str) -> int:
+        """Find the end position of a match in source text."""
+        base_end = start_idx + len(original_text)
+        
+        for offset in range(0, 40):
+            test_end = base_end + offset
+            if test_end > self.source_len:
+                break
+            
+            chunk = self.source_text[start_idx:test_end]
+            chunk_normalized = self._normalize_for_matching(chunk)
+            
+            if chunk_normalized == normalized_search:
+                return test_end
+        
+        return min(base_end, self.source_len)
+    
+    def _normalize_for_matching(self, text: str) -> str:
+        """Normalize text for comparison. Uses cache for efficiency."""
+        if not text:
+            return ""
+        
+        cache_key = text[:100] if len(text) > 100 else text
+        if cache_key in self._normalized_cache:
+            return self._normalized_cache[cache_key]
+        
+        result = re.sub(r'\[\[ID:.*?\]\]\s*', '', text)
+        result = re.sub(r'\*\*([^*]+)\*\*', r'\1', result)
+        result = re.sub(r'\*([^*]+)\*', r'\1', result)
+        result = re.sub(r'__([^_]+)__', r'\1', result)
+        result = ' '.join(result.split())
+        
+        if len(self._normalized_cache) < 1000:
+            self._normalized_cache[cache_key] = result
+        
+        return result
+
+
+def create_text_matcher(source_text: str) -> OptimizedTextMatcher:
+    """Factory function to create an optimized text matcher."""
+    return OptimizedTextMatcher(source_text)
+
+
+def fast_normalize_text(text: str) -> str:
+    """Quick text normalization for comparison purposes."""
+    if not text:
+        return ""
+    result = re.sub(r'\[\[ID:.*?\]\]\s*', '', text)
+    result = re.sub(r'\*\*([^*]+)\*\*', r'\1', result)
+    result = re.sub(r'\*([^*]+)\*', r'\1', result)
+    result = re.sub(r'__([^_]+)__', r'\1', result)
+    return ' '.join(result.split()).strip()
