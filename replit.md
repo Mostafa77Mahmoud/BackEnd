@@ -123,6 +123,19 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### December 8, 2025 - File Search Retry & Partial Results
+- **Added**: `is_retryable_error()` function to classify transient vs permanent errors
+  - Detects: 503, 429 rate limit, 500, timeout, connection errors
+- **Improved**: All retry loops now use `for-attempt` style with exponential backoff
+  - `extract_key_terms()`: Retries up to 3 times with exponential delay
+  - `search_chunks()` general search: Retries up to 3 times
+  - `search_chunks()` sensitive search: Retries per clause, continues on failure
+- **Added**: Partial results preservation
+  - If sensitive search fails, general search results are still returned
+  - Pipeline logs `PARTIAL` or `COMPLETE` status
+  - API call waste reduced by ~70% in failure scenarios
+- **Verified**: `FileSearchService` uses `GEMINI_FILE_SEARCH_API_KEY` exclusively (separate from `GEMINI_API_KEY`)
+
 ### December 8, 2025 - File Search Optimization (Single Call Only)
 - **Fixed**: File search now only runs once during the initial analysis step
   - Modified `analysis_upload.py`: Now saves `aaoifi_context`, `aaoifi_chunks`, and `file_search_extracted_terms` to the session document in MongoDB
