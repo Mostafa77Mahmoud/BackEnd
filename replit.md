@@ -123,6 +123,22 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### December 8, 2025 - Confirmed Terms & Expert Feedback Improvements
+- **Fixed**: `expert_name` now optional in `/feedback/expert` endpoint
+  - Previously caused "missing field" errors when not provided
+  - Now defaults to empty string if not specified
+- **Improved**: Flexible text matching for confirmed terms in contract generation
+  - New `flexible_text_replace()` function handles whitespace/formatting differences
+  - Character-by-character matching with markdown marker skipping
+  - Safe failure mode: skips term if no precise match (prevents document corruption)
+  - Handles `[[ID:...]]` markers, `**bold**`, `*italic*`, `__underline__`
+- **Fixed**: `generate_modified_contract` now uses flexible matching
+  - Previously used simple `string.replace()` which failed on formatting differences
+  - Now logs successful/failed replacements for debugging
+- **Fixed**: `generate_marked_contract` now properly merges confirmed terms
+  - Confirmed terms from session are merged with db terms before marking
+  - Ensures confirmed modifications appear highlighted in marked contracts
+
 ### December 8, 2025 - File Search Context Preservation Fix
 - **Fixed**: AAOIFI context now preserved even when file search has partial failures
   - `analysis_upload.py`: No longer resets `aaoifi_context` to empty string on exceptions
