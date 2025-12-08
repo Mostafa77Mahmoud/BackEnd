@@ -306,25 +306,12 @@ def generate_modified_contract():
         logger.error("Contract source text (markdown) not found for generation")
         return jsonify({"error": "Contract source text (markdown) not found for generation."}), 500
     
-    # Retrieve AAOIFI context for contract regeneration
-    aaoifi_context = ""
-    try:
-        logger.info("Retrieving AAOIFI context for contract regeneration...")
-        from app.services.file_search import FileSearchService
-        file_search_service = FileSearchService()
-        aaoifi_chunks, extracted_terms = file_search_service.search_chunks(markdown_source[:3000], top_k=10)
-        
-        if aaoifi_chunks:
-            chunk_texts = []
-            for idx, chunk in enumerate(aaoifi_chunks, 1):
-                chunk_text = chunk.get("chunk_text", "")
-                if chunk_text:
-                    chunk_texts.append(f"[معيار AAOIFI {idx}]\n{chunk_text}")
-            aaoifi_context = "\n\n".join(chunk_texts) if chunk_texts else ""
-            logger.info(f"AAOIFI context prepared for regeneration: {len(aaoifi_context)} characters")
-    except Exception as e:
-        logger.warning(f"File search failed for regeneration, proceeding without context: {e}")
-        aaoifi_context = ""
+    # Retrieve AAOIFI context from database (saved during analysis step)
+    aaoifi_context = session_doc.get("aaoifi_context", "")
+    if aaoifi_context:
+        logger.info(f"Using saved AAOIFI context for contract generation: {len(aaoifi_context)} characters")
+    else:
+        logger.info("No AAOIFI context found in session, proceeding without context")
 
     cloudinary_base_folder = current_app.config.get('CLOUDINARY_BASE_FOLDER', 'shariaa_analyzer')
     modified_contracts_subfolder = current_app.config.get('CLOUDINARY_MODIFIED_CONTRACTS_SUBFOLDER', 'modified_contracts')

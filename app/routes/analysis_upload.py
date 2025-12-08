@@ -503,7 +503,10 @@ def analyze_file():
             "interactions": [],
             "modified_contract_info": None,
             "marked_contract_info": None,
-            "pdf_preview_info": {}
+            "pdf_preview_info": {},
+            "aaoifi_context": aaoifi_context,
+            "aaoifi_chunks": aaoifi_chunks,
+            "file_search_extracted_terms": extracted_terms
         }
         contracts_collection.insert_one(contract_doc)
         logger.info(f"Saved to database: {session_id_local}")

@@ -67,25 +67,12 @@ def interact():
         # Select appropriate interaction prompt
         interaction_prompt = DefaultConfig.INTERACTION_PROMPT_SHARIA
         
-        # Retrieve AAOIFI context
-        aaoifi_context = ""
-        try:
-            logger.info("Retrieving AAOIFI context for interaction...")
-            from app.services.file_search import FileSearchService
-            file_search_service = FileSearchService()
-            aaoifi_chunks, extracted_terms = file_search_service.search_chunks(full_contract_context[:3000], top_k=5)
-            
-            if aaoifi_chunks:
-                chunk_texts = []
-                for idx, chunk in enumerate(aaoifi_chunks, 1):
-                    chunk_text = chunk.get("chunk_text", "")
-                    if chunk_text:
-                        chunk_texts.append(f"[معيار AAOIFI {idx}]\n{chunk_text}")
-                aaoifi_context = "\n\n".join(chunk_texts) if chunk_texts else ""
-                logger.info(f"AAOIFI context prepared for interaction: {len(aaoifi_context)} characters")
-        except Exception as e:
-            logger.warning(f"File search failed for interaction, proceeding without context: {e}")
-            aaoifi_context = ""
+        # Retrieve AAOIFI context from database (saved during analysis step)
+        aaoifi_context = session_doc.get("aaoifi_context", "")
+        if aaoifi_context:
+            logger.info(f"Using saved AAOIFI context for interaction: {len(aaoifi_context)} characters")
+        else:
+            logger.info("No AAOIFI context found in session, proceeding without context")
         
         try:
             formatted_interaction_prompt = interaction_prompt.format(output_language=contract_lang, aaoifi_context=aaoifi_context)
@@ -195,26 +182,12 @@ def review_modification():
         # Select appropriate review prompt
         review_prompt = DefaultConfig.REVIEW_MODIFICATION_PROMPT_SHARIA
         
-        # Retrieve AAOIFI context for review
-        aaoifi_context = ""
-        try:
-            logger.info("Retrieving AAOIFI context for modification review...")
-            from app.services.file_search import FileSearchService
-            file_search_service = FileSearchService()
-            review_search_text = f"{original_term_text} {user_modified_text}"
-            aaoifi_chunks, extracted_terms = file_search_service.search_chunks(review_search_text, top_k=5)
-            
-            if aaoifi_chunks:
-                chunk_texts = []
-                for idx, chunk in enumerate(aaoifi_chunks, 1):
-                    chunk_text = chunk.get("chunk_text", "")
-                    if chunk_text:
-                        chunk_texts.append(f"[معيار AAOIFI {idx}]\n{chunk_text}")
-                aaoifi_context = "\n\n".join(chunk_texts) if chunk_texts else ""
-                logger.info(f"AAOIFI context prepared for review: {len(aaoifi_context)} characters")
-        except Exception as e:
-            logger.warning(f"File search failed for review, proceeding without context: {e}")
-            aaoifi_context = ""
+        # Retrieve AAOIFI context from database (saved during analysis step)
+        aaoifi_context = session_doc.get("aaoifi_context", "")
+        if aaoifi_context:
+            logger.info(f"Using saved AAOIFI context for review: {len(aaoifi_context)} characters")
+        else:
+            logger.info("No AAOIFI context found in session, proceeding without context")
         
         try:
             formatted_review_prompt = review_prompt.format(output_language=contract_lang, aaoifi_context=aaoifi_context)
