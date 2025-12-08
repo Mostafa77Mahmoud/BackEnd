@@ -141,6 +141,7 @@ def submit_expert_feedback():
     logger.info("Processing expert feedback submission")
     
     contracts_collection = get_contracts_collection()
+    terms_collection = get_terms_collection()
     
     if contracts_collection is None:
         return jsonify({"error": "Database service unavailable."}), 503
@@ -149,30 +150,64 @@ def submit_expert_feedback():
         return jsonify({"error": "Content-Type must be application/json."}), 415
     
     try:
-        feedback_data = request.get_json()
+        request_data = request.get_json()
         
-        required_fields = ["session_id", "feedback_text"]
-        for field in required_fields:
-            if field not in feedback_data or not feedback_data[field]:
-                return jsonify({"error": f"Missing required field: {field}"}), 400
+        # Support both old format (feedback_text) and new format (feedback_data with nested structure)
+        session_id = request_data.get("session_id")
+        term_id = request_data.get("term_id")
         
-        session_id = feedback_data["session_id"]
-        expert_name = feedback_data.get("expert_name", "")  # Optional field
-        feedback_text = feedback_data["feedback_text"]
-        rating = feedback_data.get("rating")
+        if not session_id:
+            return jsonify({"error": "Missing required field: session_id"}), 400
         
         # Verify session exists
         session_doc = contracts_collection.find_one({"_id": session_id})
         if not session_doc:
             return jsonify({"error": "Session not found."}), 404
         
-        # Create feedback document
-        feedback_doc = {
-            "expert_name": expert_name,
-            "feedback_text": feedback_text,
-            "rating": rating,
-            "submitted_at": datetime.datetime.now()
-        }
+        # Handle new frontend format with feedback_data nested structure
+        feedback_data_nested = request_data.get("feedback_data")
+        
+        if feedback_data_nested:
+            # New format from frontend
+            feedback_doc = {
+                "term_id": term_id,
+                "ai_analysis_approved": feedback_data_nested.get("aiAnalysisApproved"),
+                "expert_is_valid_sharia": feedback_data_nested.get("expertIsValidSharia"),
+                "expert_comment": feedback_data_nested.get("expertComment", ""),
+                "expert_corrected_sharia_issue": feedback_data_nested.get("expertCorrectedShariaIssue"),
+                "expert_corrected_reference": feedback_data_nested.get("expertCorrectedReference"),
+                "expert_corrected_suggestion": feedback_data_nested.get("expertCorrectedSuggestion"),
+                "submitted_at": datetime.datetime.now()
+            }
+            
+            # Update term with expert feedback if term_id is provided
+            if term_id and terms_collection is not None:
+                terms_collection.update_one(
+                    {"session_id": session_id, "term_id": term_id},
+                    {"$set": {
+                        "has_expert_feedback": True,
+                        "expert_override_is_valid_sharia": feedback_data_nested.get("expertIsValidSharia"),
+                        "expert_feedback_comment": feedback_data_nested.get("expertComment", "")
+                    }}
+                )
+        else:
+            # Old format with feedback_text (backward compatibility)
+            feedback_text = request_data.get("feedback_text")
+            if not feedback_text:
+                return jsonify({"error": "Missing required field: feedback_text or feedback_data"}), 400
+            
+            feedback_doc = {
+                "term_id": term_id,
+                "expert_name": request_data.get("expert_name", ""),
+                "feedback_text": feedback_text,
+                "rating": request_data.get("rating"),
+                "submitted_at": datetime.datetime.now()
+            }
+        
+        # Generate feedback ID
+        import uuid
+        feedback_id = str(uuid.uuid4())[:8]
+        feedback_doc["feedback_id"] = feedback_id
         
         # Update session with expert feedback
         contracts_collection.update_one(
@@ -180,10 +215,12 @@ def submit_expert_feedback():
             {"$push": {"expert_feedback": feedback_doc}}
         )
         
-        logger.info(f"Expert feedback submitted for session: {session_id}")
+        logger.info(f"Expert feedback submitted for session: {session_id}, term: {term_id}")
         return jsonify({
+            "success": True,
             "message": "Expert feedback submitted successfully.",
             "session_id": session_id,
+            "feedback_id": feedback_id,
             "submitted_at": feedback_doc["submitted_at"].isoformat()
         })
         

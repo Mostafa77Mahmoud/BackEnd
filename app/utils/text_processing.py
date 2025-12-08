@@ -339,13 +339,76 @@ def _try_match_at_position(source_text: str, start_pos: int, normalized_target: 
     return None
 
 
-def apply_confirmed_terms_to_text(source_text: str, confirmed_terms: dict) -> tuple[str, int, int]:
+def _is_arabic_language(contract_language: str) -> bool:
+    """Check if the language string indicates Arabic."""
+    if not contract_language:
+        return True  # Default to Arabic
+    lang_lower = contract_language.lower().strip()
+    return lang_lower in ('ar', 'arabic', 'ar-sa', 'ar-eg', 'ar-ae', 'العربية')
+
+
+def format_confirmed_text_with_proper_structure(confirmed_text: str, contract_language: str = 'ar') -> str:
+    """
+    Ensures confirmed text has proper structure with clause titles on separate lines.
+    Detects if clause title and body are merged and separates them.
+    """
+    if not confirmed_text:
+        return confirmed_text
+    
+    # Arabic clause title patterns that should be on their own line
+    arabic_clause_patterns = [
+        r'^(البند\s+(?:الأول|الثاني|الثالث|الرابع|الخامس|السادس|السابع|الثامن|التاسع|العاشر|الحادي عشر|الثاني عشر|الثالث عشر|الرابع عشر|الخامس عشر|التمهيدي|الأخير))',
+        r'^(المادة\s+\d+)',
+    ]
+    
+    # English clause title patterns
+    english_clause_patterns = [
+        r'^(Clause\s+\d+)',
+        r'^(Article\s+\d+)',
+        r'^(Section\s+\d+)',
+    ]
+    
+    patterns = arabic_clause_patterns if _is_arabic_language(contract_language) else english_clause_patterns
+    
+    lines = confirmed_text.split('\n')
+    formatted_lines = []
+    
+    for line in lines:
+        line_stripped = line.strip()
+        if not line_stripped:
+            formatted_lines.append(line)
+            continue
+        
+        # Check if line starts with a clause title that has content merged
+        matched = False
+        for pattern in patterns:
+            match = re.match(pattern, line_stripped)
+            if match:
+                title = match.group(1)
+                remaining = line_stripped[len(title):].strip()
+                
+                # If there's content after the title (not just punctuation), separate them
+                if remaining and not re.match(r'^[:؟?!\.،,]*$', remaining):
+                    formatted_lines.append(title)
+                    formatted_lines.append(remaining)
+                    matched = True
+                    break
+        
+        if not matched:
+            formatted_lines.append(line)
+    
+    return '\n'.join(formatted_lines)
+
+
+def apply_confirmed_terms_to_text(source_text: str, confirmed_terms: dict, contract_language: str = 'ar') -> tuple[str, int, int]:
     """
     Applies all confirmed term modifications to the source text using flexible matching.
+    Formats each confirmed snippet to ensure proper clause title formatting.
     
     Args:
         source_text: The original contract text
         confirmed_terms: Dict of term_id -> term_data with original_text and confirmed_text
+        contract_language: Language of the contract ('ar' or 'en')
     
     Returns:
         tuple: (modified_text, successful_replacements_count, failed_replacements_count)
@@ -370,8 +433,12 @@ def apply_confirmed_terms_to_text(source_text: str, confirmed_terms: dict) -> tu
         if original_text.strip() == confirmed_text.strip():
             continue
         
+        # Format the confirmed text snippet to ensure proper clause title formatting
+        # This only formats the replacement snippet, not the entire document
+        formatted_confirmed_text = format_confirmed_text_with_proper_structure(confirmed_text, contract_language)
+        
         modified_text, was_replaced = flexible_text_replace(
-            modified_text, original_text, confirmed_text
+            modified_text, original_text, formatted_confirmed_text
         )
         
         if was_replaced:

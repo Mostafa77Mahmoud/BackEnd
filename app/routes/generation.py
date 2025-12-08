@@ -347,8 +347,9 @@ def generate_modified_contract():
             logger.info("Reconstructing contract with confirmed modifications")
 
             # Use flexible text matching for confirmed terms replacement
+            # Pass contract language for proper formatting of clause titles
             final_text_content_for_output, successful, failed = apply_confirmed_terms_to_text(
-                markdown_source, confirmed_terms
+                markdown_source, confirmed_terms, contract_lang
             )
             logger.info(f"Applied {successful} confirmed modifications, {failed} failed")
 

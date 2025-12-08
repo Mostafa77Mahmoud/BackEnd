@@ -124,12 +124,17 @@ def interact():
         cleaned_response = clean_model_response(response.text)
         
         logger.info(f"Interaction processed successfully for session: {session_id}")
+        
+        # Return response format that frontend expects
+        # Frontend askQuestion expects just the answer text or a structured response
         return jsonify({
             "answer": cleaned_response,
+            "response": cleaned_response,  # Alias for compatibility
             "session_id": session_id,
             "term_id": term_id_context,
             "contract_language": contract_lang,
-            "timestamp": datetime.datetime.now().isoformat()
+            "timestamp": datetime.datetime.now().isoformat(),
+            "success": True
         })
         
     except Exception as e:
