@@ -123,6 +123,17 @@ Server runs on port 5000.
 
 ## Recent Updates
 
+### December 8, 2025 - File Search Context Preservation Fix
+- **Fixed**: AAOIFI context now preserved even when file search has partial failures
+  - `analysis_upload.py`: No longer resets `aaoifi_context` to empty string on exceptions
+  - Partial results from file search are now used for analysis instead of discarded
+- **Improved**: Better logging for context size
+  - Logs now show: contract chars, AAOIFI context chars, and system prompt length
+  - `ai_service.py`: Added system prompt length to log output
+- **Fixed**: `file_search.py` exception handler now merges both general AND sensitive chunks
+  - Previously only general_chunks were returned on failure
+  - Now all collected chunks (general + sensitive) are preserved and returned
+
 ### December 8, 2025 - File Search Retry & Partial Results
 - **Added**: `is_retryable_error()` function to classify transient vs permanent errors
   - Detects: 503, 429 rate limit, 500, timeout, connection errors
