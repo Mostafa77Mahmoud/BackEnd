@@ -151,13 +151,13 @@ def submit_expert_feedback():
     try:
         feedback_data = request.get_json()
         
-        required_fields = ["session_id", "expert_name", "feedback_text"]
+        required_fields = ["session_id", "feedback_text"]
         for field in required_fields:
             if field not in feedback_data or not feedback_data[field]:
                 return jsonify({"error": f"Missing required field: {field}"}), 400
         
         session_id = feedback_data["session_id"]
-        expert_name = feedback_data["expert_name"]
+        expert_name = feedback_data.get("expert_name", "")  # Optional field
         feedback_text = feedback_data["feedback_text"]
         rating = feedback_data.get("rating")
         

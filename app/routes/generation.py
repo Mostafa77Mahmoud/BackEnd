@@ -319,7 +319,7 @@ def generate_modified_contract():
     temp_processing_folder = current_app.config.get('TEMP_PROCESSING_FOLDER', '/tmp/shariaa_temp')
     
     from app.utils.file_helpers import clean_filename, ensure_dir
-    from app.utils.text_processing import generate_safe_public_id
+    from app.utils.text_processing import generate_safe_public_id, apply_confirmed_terms_to_text
     from app.services.document_processor import create_docx_from_llm_markdown
     from app.services.cloudinary_service import upload_to_cloudinary_helper
     
@@ -346,20 +346,11 @@ def generate_modified_contract():
         try:
             logger.info("Reconstructing contract with confirmed modifications")
 
-            final_text_content_for_output = markdown_source
-
-            for term_id, term_data in confirmed_terms.items():
-                if not isinstance(term_data, dict):
-                    continue
-
-                original_text = term_data.get("original_text", "")
-                confirmed_text = term_data.get("confirmed_text", "")
-
-                if original_text and confirmed_text and original_text != confirmed_text:
-                    logger.info(f"Applying modification for term {term_id}")
-                    final_text_content_for_output = final_text_content_for_output.replace(
-                        original_text, confirmed_text
-                    )
+            # Use flexible text matching for confirmed terms replacement
+            final_text_content_for_output, successful, failed = apply_confirmed_terms_to_text(
+                markdown_source, confirmed_terms
+            )
+            logger.info(f"Applied {successful} confirmed modifications, {failed} failed")
 
             final_text_content_for_output = re.sub(r'^\[\[ID:.*?\]\]\s*', '', final_text_content_for_output, flags=re.MULTILINE)
             final_text_content_for_output = re.sub(r'```.*?\n', '', final_text_content_for_output, flags=re.MULTILINE)
@@ -490,6 +481,19 @@ def generate_marked_contract():
 
     db_terms_list = list(terms_collection.find({"session_id": session_id}))
     logger.info(f"Found {len(db_terms_list)} terms for marking")
+    
+    # Merge confirmed_terms from session with db_terms for proper highlighting
+    confirmed_terms = session_doc.get("confirmed_terms", {})
+    if confirmed_terms:
+        logger.info(f"Merging {len(confirmed_terms)} confirmed modifications with terms")
+        for term in db_terms_list:
+            term_id = term.get("term_id") or term.get("_id")
+            if term_id and str(term_id) in confirmed_terms:
+                confirmed_data = confirmed_terms[str(term_id)]
+                # Update term with confirmed modification data
+                term["is_confirmed_by_user"] = True
+                term["confirmed_modified_text"] = confirmed_data.get("confirmed_text", "")
+                logger.debug(f"Merged confirmed modification for term {term_id}")
 
     cloudinary_base_folder = current_app.config.get('CLOUDINARY_BASE_FOLDER', 'shariaa_analyzer')
     marked_contracts_subfolder = current_app.config.get('CLOUDINARY_MARKED_CONTRACTS_SUBFOLDER', 'marked_contracts')
