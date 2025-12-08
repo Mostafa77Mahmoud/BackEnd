@@ -69,12 +69,12 @@ Correct in `user_modified_text`:
 **Exact Structure:**
 
 ```json
-{
+{{
   "reviewed_text": "string - final clause text after legal and linguistic review",
   "is_still_valid_legal": true or false,
   "new_legal_issue": "string or null - description of new legal issue if any",
   "new_reference_number": "string or null - legal reference for new issue if any"
-}
+}}
 ```
 
 ## Practical Examples
@@ -87,12 +87,12 @@ Correct in `user_modified_text`:
 
 **Output:**
 ```json
-{
+{{
   "reviewed_text": "The Employee shall receive overtime compensation at a rate of 1.5 times the regular hourly wage for all hours worked beyond 40 hours per week",
   "is_still_valid_legal": true,
   "new_legal_issue": null,
   "new_reference_number": null
-}
+}}
 ```
 
 ### Example 2: Modification still non-compliant
@@ -103,12 +103,12 @@ Correct in `user_modified_text`:
 
 **Output:**
 ```json
-{
+{{
   "reviewed_text": "The Company's liability for damages arising from breach of this Agreement shall be capped at the total fees paid in the preceding 12 months, except for liability arising from gross negligence, willful misconduct, death, or personal injury, which shall not be subject to any limitation",
   "is_still_valid_legal": false,
   "new_legal_issue": "Capping liability for death or personal injury at any amount is illegal and unenforceable under tort law. Such liability cannot be limited by contract",
   "new_reference_number": "Article 163 of Civil Code, Consumer Protection Act Section 12(3)"
-}
+}}
 ```
 
 ### Example 3: Fully compliant modification
@@ -119,12 +119,12 @@ Correct in `user_modified_text`:
 
 **Output:**
 ```json
-{
+{{
   "reviewed_text": "Either party may terminate this Agreement by providing thirty (30) days prior written notice to the other party",
   "is_still_valid_legal": true,
   "new_legal_issue": null,
   "new_reference_number": null
-}
+}}
 ```
 
 ## Critical Warnings

@@ -153,6 +153,13 @@ export const uploadContractForAnalysis = async (file: File, onUploadProgress?: (
   return handleResponse<AnalyzeApiResponse>(response);
 };
 
+interface InteractApiResponse {
+  answer: string;
+  response?: string;
+  session_id?: string;
+  success?: boolean;
+}
+
 export const askQuestion = async (sessionId: string, questionText: string, termId?: string, termTextContent?: string ): Promise<string> => {
   const payload: { question: string; term_id?: string; term_text?: string } = { question: questionText, };
   if (termId) { payload.term_id = termId; }
@@ -162,7 +169,8 @@ export const askQuestion = async (sessionId: string, questionText: string, termI
     headers: { 'Content-Type': 'application/json', ...NGROK_SKIP_BROWSER_WARNING_HEADER },
     body: JSON.stringify(payload),
   });
-  return handleResponse<string>(response);
+  const jsonResponse = await handleResponse<InteractApiResponse>(response);
+  return jsonResponse.answer || jsonResponse.response || '';
 };
 
 export const reviewUserModificationApi = async (sessionId: string, termId: string, userModifiedText: string, originalTermText: string): Promise<ReviewModificationApiResponse> => {
