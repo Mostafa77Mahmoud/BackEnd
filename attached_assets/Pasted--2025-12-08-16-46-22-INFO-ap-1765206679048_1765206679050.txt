@@ -1,0 +1,58 @@
+المشكلة الأولي
+علي الرغم من ان التسجيل رأي الخبير ينجح انظر للسجلات 
+2025-12-08 16:46:22] [INFO] [app.routes.interaction] Modification confirmed for session 07cb2c19-c0a0-465f-94c9-6e52e70a3f84, term clause_3
+[2025-12-08 16:47:10] [INFO] [app.routes.interaction] Processing confirm modification request
+[2025-12-08 16:47:10] [INFO] [app.routes.interaction] Confirming modification for session: 07cb2c19-c0a0-465f-94c9-6e52e70a3f84, term: clause_11
+[2025-12-08 16:47:10] [INFO] [app.routes.interaction] Modification confirmed for session 07cb2c19-c0a0-465f-94c9-6e52e70a3f84, term clause_11
+[2025-12-08 16:47:47] [INFO] [app.routes.analysis_admin] Processing expert feedback submission
+[2025-12-08 16:47:47] [INFO] [app.routes.analysis_admin] Expert feedback submitted for session: 07cb2c19-c0a0-465f-94c9-6e52e70a3f84, term: clause_11
+[2025-12-08 16:49:04] [INFO] [app.routes.analysis_admin] Processing expert feedback submission
+[2025-12-08 16:49:04] [INFO] [app.routes.analysis_admin] Expert feedback submitted for session: 07cb2c19-c0a0-465f-94c9-6e52e70a3f84, term: clause_9
+الا اني عند فتح mongo compas وفتح expert_feedback collection لا اري ما تم اضافتة 
+
+المشكلة الثانية 
+عند انشاء عقد مع العلامات generate_marked_contract أصبح يأخذ وقتا طويلا جدا 
+انظر للسجلات 
+[2025-12-08 16:51:09] [DEBUG] [app.utils.text_processing] Generated safe public_id: marked_Document_51_c50f55 from base_name: Document_51
+[2025-12-08 16:51:09] [INFO] [app.routes.generation] Sorted 13 terms for marking        
+[2025-12-08 16:51:09] [INFO] [app.routes.generation] Creating marked DOCX from markdown with term highlighting
+[2025-12-08 16:51:10] [INFO] [app.services.document_processor] DOC_PROCESSING: Using new list-based term marking logic for PDF/TXT. 13 terms.
+[2025-12-08 16:51:10] [INFO] [app.services.document_processor] Found term 'clause_0' at pos 563
+[2025-12-08 16:51:10] [INFO] [app.services.document_processor] Found term 'clause_1' at pos 4328
+[2025-12-08 16:51:10] [INFO] [app.services.document_processor] Found term 'clause_2' at pos 4430
+[2025-12-08 16:52:08] [INFO] [app.services.document_processor] Found term 'clause_3' at pos 5026
+[2025-12-08 16:52:08] [INFO] [app.services.document_processor] Applying MARKING: Red original, Green new for term clause_3
+[2025-12-08 16:52:08] [WARNING] [app.services.document_processor] Term 'clause_4' text not found sequentially from pos 6618
+[2025-12-08 16:52:08] [WARNING] [app.services.document_processor] Term 'clause_5' text not found sequentially from pos 6618
+[2025-12-08 16:52:09] [WARNING] [app.services.document_processor] Term 'clause_6' text not found sequentially from pos 6618
+[2025-12-08 16:52:09] [WARNING] [app.services.document_processor] Term 'clause_7' text not found sequentially from pos 6618
+[2025-12-08 16:52:09] [WARNING] [app.services.document_processor] Term 'clause_8' text not found sequentially from pos 6618
+[2025-12-08 16:52:09] [WARNING] [app.services.document_processor] Term 'clause_9' text not found sequentially from pos 6618
+[2025-12-08 16:52:09] [WARNING] [app.services.document_processor] Term 'clause_10' text not found sequentially from pos 6618
+[2025-12-08 16:52:09] [WARNING] [app.services.document_processor] Term 'clause_11' text not found sequentially from pos 6618
+[2025-12-08 16:52:09] [WARNING] [app.services.document_processor] Term 'clause_12' text not found sequentially from pos 6618
+[2025-12-08 16:52:09] [INFO] [app.services.document_processor] DOCX document created successfully: C:\Users\Mostafa\AppData\Local\Temp\shariaa_temp\marked_dxo9pp6u.docx        
+[2025-12-08 16:52:09] [INFO] [app.routes.generation] Uploading marked contract to Cloudinary
+[2025-12-08 16:52:09] [DEBUG] [app.services.cloudinary_service] DEBUG: Attempting to upload to Cloudinary. File: C:\Users\Mostafa\AppData\Local\Temp\shariaa_temp\marked_dxo9pp6u.docx, Options: {'folder': 'shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/marked_contracts', 'public_id': 'marked_Document_51_c50f55', 'resource_type': 'auto', 'overwrite': True}
+[2025-12-08 16:52:09] [DEBUG] [app.services.cloudinary_service] DEBUG: Raw Cloudinary upload_result for C:\Users\Mostafa\AppData\Local\Temp\shariaa_temp\marked_dxo9pp6u.docx: {'asset_id': 'cedd6366613a118e28b1753310935848', 'public_id': 'shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/marked_contracts/marked_Document_51_c50f55.docx', 'version': 1765205529, 'version_id': 'c984cd38298f49af696bd253c1151505', 'signature': '91e8b91e937097c77f9edec19f1615327e9be9f5', 'resource_type': 'raw', 'created_at': '2025-12-08T14:52:09Z', 'tags': [], 'bytes': 41098, 'type': 'upload', 'etag': '67fa7282199353bd53a333191f109406', 'placeholder': False, 'url': 'http://res.cloudinary.com/dr6jicgld/raw/upload/v1765205529/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/marked_contracts/marked_Document_51_c50f55.docx', 'secure_url': 'https://res.cloudinary.com/dr6jicgld/raw/upload/v1765205529/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/marked_contracts/marked_Document_51_c50f55.docx', 'asset_folder': 'shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/marked_contracts', 'display_name': 'marked_Document_51_c50f55.docx', 'original_filename': 'marked_dxo9pp6u', 'api_key': '961637465179968'}
+[2025-12-08 16:52:09] [INFO] [app.services.cloudinary_service] Cloudinary upload successful. URL: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765205529/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/marked_contracts/marked_Document_51_c50f55.docx
+[2025-12-08 16:52:09] [INFO] [app.routes.generation] Marked contract uploaded: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765205529/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/marked_contracts/marked_Document_51_c50f55.docx
+[2025-12-08 16:52:09] [INFO] [app.routes.generation] Marked contract generated successfully for session: 07cb2c19-c0a0-465f-94c9-6e52e70a3f84
+[2025-12-08 16:52:09] [DEBUG] [app.routes.generation] Cleaned up temporary marked DOCX file
+[2025-12-08 16:52:51] [INFO] [app.routes.generation] Generating PDF preview for marked contract, session: 07cb2c19-c0a0-465f-94c9-6e52e70a3f84
+Attempting to download from URL: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765205529/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/marked_contracts/marked_Document_51_c50f55.docx
+File successfully downloaded to temporary path: C:\Users\Mostafa\AppData\Local\Temp\shariaa_temp\tmpwbujjwk8.docx
+[2025-12-08 16:52:51] [INFO] [app.routes.generation] Converting DOCX to PDF using LibreOffice, output folder: C:\Users\Mostafa\AppData\Local\Temp\pdf_previews
+[2025-12-08 16:52:51] [INFO] [app.services.document_processor] Attempting PDF conversion with command: C:\Program Files\LibreOffice\program\soffice.exe --headless --convert-to pdf --outdir C:\Users\Mostafa\AppData\Local\Temp\pdf_previews C:\Users\Mostafa\AppData\Local\Temp\shariaa_temp\tmpwbujjwk8.docx
+[2025-12-08 16:52:54] [INFO] [app.services.document_processor] PDF conversion successful: C:\Users\Mostafa\AppData\Local\Temp\pdf_previews\tmpwbujjwk8.pdf
+[2025-12-08 16:52:54] [INFO] [app.routes.generation] PDF successfully created locally at: C:\Users\Mostafa\AppData\Local\Temp\pdf_previews\tmpwbujjwk8.pdf
+[2025-12-08 16:52:54] [DEBUG] [app.utils.text_processing] Generated safe public_id: marked_preview_marked_Document_51_c50f55_2491e5 from base_name: marked_Document_51_c50f55   
+[2025-12-08 16:52:54] [INFO] [app.services.cloudinary_service] Attempting to upload PDF with access_mode: public, resource_type: raw
+[2025-12-08 16:52:54] [DEBUG] [app.services.cloudinary_service] DEBUG: Attempting to upload to Cloudinary. File: C:\Users\Mostafa\AppData\Local\Temp\pdf_previews\tmpwbujjwk8.pdf, Options: {'folder': 'shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews', 'public_id': 'marked_preview_marked_Document_51_c50f55_2491e5', 'resource_type': 'raw', 'overwrite': True, 'access_mode': 'public'}
+[2025-12-08 16:52:54] [DEBUG] [app.services.cloudinary_service] DEBUG: Raw Cloudinary upload_result for C:\Users\Mostafa\AppData\Local\Temp\pdf_previews\tmpwbujjwk8.pdf: {'asset_id': 'af9adf8826cc2af17df8680ad2b82114', 'public_id': 'shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews/marked_preview_marked_Document_51_c50f55_2491e5.pdf', 'version': 1765205574, 'version_id': '6be5e0286e6e3af0f229f0d530e1a54f', 'signature': '8c1a1c84525be8df56359a73fa499d9002dc7f9d', 'resource_type': 'raw', 'created_at': '2025-12-08T14:52:54Z', 'tags': [], 'bytes': 101459, 'type': 'upload', 'etag': '5e3a267577c33af8029f27b164a41b15', 'placeholder': False, 'url': 'http://res.cloudinary.com/dr6jicgld/raw/upload/v1765205574/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews/marked_preview_marked_Document_51_c50f55_2491e5.pdf', 'secure_url': 'https://res.cloudinary.com/dr6jicgld/raw/upload/v1765205574/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews/marked_preview_marked_Document_51_c50f55_2491e5.pdf', 'asset_folder': 'shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews', 'display_name': 'marked_preview_marked_Document_51_c50f55_2491e5.pdf', 'original_filename': 'tmpwbujjwk8', 'api_key': '961637465179968'}
+[2025-12-08 16:52:54] [INFO] [app.services.cloudinary_service] Cloudinary upload successful. URL: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765205574/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews/marked_preview_marked_Document_51_c50f55_2491e5.pdf
+[2025-12-08 16:52:54] [INFO] [app.routes.generation] Cloudinary upload result for PDF preview: {'asset_id': 'af9adf8826cc2af17df8680ad2b82114', 'public_id': 'shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews/marked_preview_marked_Document_51_c50f55_2491e5.pdf', 'version': 1765205574, 'version_id': '6be5e0286e6e3af0f229f0d530e1a54f', 'signature': '8c1a1c84525be8df56359a73fa499d9002dc7f9d', 'resource_type': 'raw', 'created_at': '2025-12-08T14:52:54Z', 'tags': [], 'bytes': 101459, 'type': 'upload', 'etag': '5e3a267577c33af8029f27b164a41b15', 'placeholder': False, 'url': 'http://res.cloudinary.com/dr6jicgld/raw/upload/v1765205574/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews/marked_preview_marked_Document_51_c50f55_2491e5.pdf', 'secure_url': 'https://res.cloudinary.com/dr6jicgld/raw/upload/v1765205574/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews/marked_preview_marked_Document_51_c50f55_2491e5.pdf', 'asset_folder': 'shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews', 'display_name': 'marked_preview_marked_Document_51_c50f55_2491e5.pdf', 'original_filename': 'tmpwbujjwk8', 'api_key': '961637465179968'}
+[2025-12-08 16:52:54] [INFO] [app.routes.generation] PDF preview for marked uploaded to Cloudinary: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765205574/shariaa_analyzer_uploads/07cb2c19-c0a0-465f-94c9-6e52e70a3f84/pdf_previews/marked_preview_marked_Document_51_c50f55_2491e5.pdf
+[2025-12-08 16:52:54] [DEBUG] [app.routes.generation] Cleaned up temporary source DOCX file
+[2025-12-08 16:52:54] [DEBUG] [app.routes.generation] Cleaned up temporary PDF file ولا زال لا يعمل في كل البنود confirmed_terms أيضا
+بس جربتو مرتين تاني ظبط وكان بيعمل البنود كلها ومش بيطول زي اول مرة فأنت قم بالفحص لو في مشكلة حلها لو مفيش تمام
