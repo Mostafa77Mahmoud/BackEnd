@@ -1,0 +1,82 @@
+من السجلات 
+[2025-12-08 13:46:50] [DEBUG] [FILE_SEARCH] [72b41a31] google-genai version: 1.52.0     
+PS C:\Users\Mostafa\Downloads\BackEnd (Restrycterd+newENdPoints)\BackEnd> python run.py
+[2025-12-08 13:47:58] [INFO] [root] ==================================================
+[2025-12-08 13:47:58] [INFO] [root] SHARIAA CONTRACT ANALYZER - STARTUP
+[2025-12-08 13:47:58] [INFO] [root] ==================================================
+[2025-12-08 13:47:58] [INFO] [root] Debug Mode: True
+[2025-12-08 13:47:59] [INFO] [app.services.database] Attempting to connect to MongoDB...
+[2025-12-08 13:48:00] [INFO] [app.services.database] Successfully connected to MongoDB: shariaa_analyzer_db
+[2025-12-08 13:48:00] [INFO] [app.services.cloudinary_service] Cloudinary configured successfully
+[2025-12-08 13:48:04] [INFO] [app.services.ai_service] GEMINI_API_KEY configured: AIzaSyAK...5NAk
+[2025-12-08 13:48:04] [INFO] [app.services.ai_service] GEMINI_FILE_SEARCH_API_KEY configured: AIzaSyAM...O7vg
+[2025-12-08 13:48:04] [INFO] [app.services.ai_service] Google GenAI service initialized (client will be created per request)
+ * Serving Flask app 'app'
+ * Debug mode: on
+[2025-12-08 13:48:09] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1
+[2025-12-08 13:48:09] [INFO] [app.routes.analysis_terms] Retrieving terms for session: e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1
+[2025-12-08 13:48:14] [INFO] [app.routes.generation] Generating marked contract for session: e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1
+[2025-12-08 13:48:15] [INFO] [app.routes.generation] Found 13 terms for marking
+[2025-12-08 13:48:15] [DEBUG] [app.utils.text_processing] Generated safe public_id: marked_Document_51_fa28c2 from base_name: Document_51
+[2025-12-08 13:48:15] [INFO] [app.routes.generation] Sorted 13 terms for marking        
+[2025-12-08 13:48:15] [INFO] [app.routes.generation] Creating marked DOCX from markdown with term highlighting
+[2025-12-08 13:48:15] [INFO] [app.services.document_processor] DOC_PROCESSING: Using new list-based term marking logic for PDF/TXT. 13 terms.
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_0' text not found sequentially from pos 0
+[2025-12-08 13:48:15] [INFO] [app.services.document_processor] Found term 'clause_1' at pos 4283
+[2025-12-08 13:48:15] [INFO] [app.services.document_processor] Found term 'clause_2' at pos 4384
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_3' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_4' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_5' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_6' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_7' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_8' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_9' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_10' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_11' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [WARNING] [app.services.document_processor] Term 'clause_12' text not found sequentially from pos 4961
+[2025-12-08 13:48:15] [INFO] [app.services.document_processor] DOCX document created successfully: C:\tmp\shariaa_temp\marked_fsgauek6.docx
+[2025-12-08 13:48:15] [INFO] [app.routes.generation] Uploading marked contract to Cloudinary
+[2025-12-08 13:48:15] [DEBUG] [app.services.cloudinary_service] DEBUG: Attempting to upload to Cloudinary. File: C:\tmp\shariaa_temp\marked_fsgauek6.docx, Options: {'folder': 'shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/marked_contracts', 'public_id': 'marked_Document_51_fa28c2', 'resource_type': 'auto', 'overwrite': True}
+[2025-12-08 13:48:17] [DEBUG] [app.services.cloudinary_service] DEBUG: Raw Cloudinary upload_result for C:\tmp\shariaa_temp\marked_fsgauek6.docx: {'asset_id': '338de3066925c68a5e69c96733ef2e03', 'public_id': 'shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/marked_contracts/marked_Document_51_fa28c2.docx', 'version': 1765194497, 'version_id': 'e38ba9e49e260be0dedff404730c2f07', 'signature': '6f805683fe4527e3d52d4056fc55f9acd535d26e', 'resource_type': 'raw', 'created_at': '2025-12-08T11:48:17Z', 'tags': [], 'bytes': 40690, 'type': 'upload', 'etag': 'fe61b584d7dbfeecc0cfe8056866800d', 'placeholder': False, 'url': 'http://res.cloudinary.com/dr6jicgld/raw/upload/v1765194497/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/marked_contracts/marked_Document_51_fa28c2.docx', 'secure_url': 'https://res.cloudinary.com/dr6jicgld/raw/upload/v1765194497/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/marked_contracts/marked_Document_51_fa28c2.docx', 'asset_folder': 'shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/marked_contracts', 'display_name': 'marked_Document_51_fa28c2.docx', 'original_filename': 'marked_fsgauek6', 'api_key': '961637465179968'}
+[2025-12-08 13:48:17] [INFO] [app.services.cloudinary_service] Cloudinary upload successful. URL: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765194497/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/marked_contracts/marked_Document_51_fa28c2.docx
+[2025-12-08 13:48:17] [INFO] [app.routes.generation] Marked contract uploaded: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765194497/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/marked_contracts/marked_Document_51_fa28c2.docx
+[2025-12-08 13:48:17] [INFO] [app.routes.generation] Marked contract generated successfully for session: e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1
+[2025-12-08 13:48:17] [DEBUG] [app.routes.generation] Cleaned up temporary marked DOCX file
+[2025-12-08 13:48:21] [INFO] [app.routes.generation] Generating PDF preview for marked contract, session: e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1
+Attempting to download from URL: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765194497/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/marked_contracts/marked_Document_51_fa28c2.docx
+File successfully downloaded to temporary path: C:\tmp\shariaa_temp\tmp8egyazh1.docx
+[2025-12-08 13:48:22] [INFO] [app.routes.generation] Converting DOCX to PDF using LibreOffice, output folder: /tmp/pdf_previews
+[2025-12-08 13:48:22] [INFO] [app.services.document_processor] Attempting PDF conversion with command: C:\Program Files\LibreOffice\program\soffice.exe --headless --convert-to pdf --outdir /tmp/pdf_previews C:\tmp\shariaa_temp\tmp8egyazh1.docx
+[2025-12-08 13:48:31] [INFO] [app.services.document_processor] PDF conversion successful: /tmp/pdf_previews\tmp8egyazh1.pdf
+[2025-12-08 13:48:31] [INFO] [app.routes.generation] PDF successfully created locally at: /tmp/pdf_previews\tmp8egyazh1.pdf
+[2025-12-08 13:48:31] [DEBUG] [app.utils.text_processing] Generated safe public_id: marked_preview_marked_Document_51_fa28c2_154a27 from base_name: marked_Document_51_fa28c2   
+[2025-12-08 13:48:31] [INFO] [app.services.cloudinary_service] Attempting to upload PDF with access_mode: public, resource_type: raw
+[2025-12-08 13:48:31] [DEBUG] [app.services.cloudinary_service] DEBUG: Attempting to upload to Cloudinary. File: /tmp/pdf_previews\tmp8egyazh1.pdf, Options: {'folder': 'shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews', 'public_id': 'marked_preview_marked_Document_51_fa28c2_154a27', 'resource_type': 'raw', 'overwrite': True, 'access_mode': 'public'}
+[2025-12-08 13:48:32] [DEBUG] [app.services.cloudinary_service] DEBUG: Raw Cloudinary upload_result for /tmp/pdf_previews\tmp8egyazh1.pdf: {'asset_id': '0d02c8e91817def538004a1782b40ff6', 'public_id': 'shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews/marked_preview_marked_Document_51_fa28c2_154a27.pdf', 'version': 1765194512, 'version_id': '84c908b36d131e9ee9bf62a58ec4aae8', 'signature': 'ce6c5e2826862b51428f8adb76e293ce4674640e', 'resource_type': 'raw', 'created_at': '2025-12-08T11:48:32Z', 'tags': [], 'bytes': 81501, 'type': 'upload', 'etag': '60562725451075aa4ccd44c8f79d2f49', 'placeholder': False, 'url': 'http://res.cloudinary.com/dr6jicgld/raw/upload/v1765194512/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews/marked_preview_marked_Document_51_fa28c2_154a27.pdf', 'secure_url': 'https://res.cloudinary.com/dr6jicgld/raw/upload/v1765194512/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews/marked_preview_marked_Document_51_fa28c2_154a27.pdf', 'asset_folder': 'shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews', 'display_name': 'marked_preview_marked_Document_51_fa28c2_154a27.pdf', 'original_filename': 'tmp8egyazh1', 'api_key': '961637465179968'}
+[2025-12-08 13:48:32] [INFO] [app.services.cloudinary_service] Cloudinary upload successful. URL: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765194512/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews/marked_preview_marked_Document_51_fa28c2_154a27.pdf
+[2025-12-08 13:48:32] [INFO] [app.routes.generation] Cloudinary upload result for PDF preview: {'asset_id': '0d02c8e91817def538004a1782b40ff6', 'public_id': 'shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews/marked_preview_marked_Document_51_fa28c2_154a27.pdf', 'version': 1765194512, 'version_id': '84c908b36d131e9ee9bf62a58ec4aae8', 'signature': 'ce6c5e2826862b51428f8adb76e293ce4674640e', 'resource_type': 'raw', 'created_at': '2025-12-08T11:48:32Z', 'tags': [], 'bytes': 81501, 'type': 'upload', 'etag': '60562725451075aa4ccd44c8f79d2f49', 'placeholder': False, 'url': 'http://res.cloudinary.com/dr6jicgld/raw/upload/v1765194512/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews/marked_preview_marked_Document_51_fa28c2_154a27.pdf', 'secure_url': 'https://res.cloudinary.com/dr6jicgld/raw/upload/v1765194512/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews/marked_preview_marked_Document_51_fa28c2_154a27.pdf', 'asset_folder': 'shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews', 'display_name': 'marked_preview_marked_Document_51_fa28c2_154a27.pdf', 'original_filename': 'tmp8egyazh1', 'api_key': '961637465179968'}
+[2025-12-08 13:48:32] [INFO] [app.routes.generation] PDF preview for marked uploaded to Cloudinary: https://res.cloudinary.com/dr6jicgld/raw/upload/v1765194512/shariaa_analyzer_uploads/e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1/pdf_previews/marked_preview_marked_Document_51_fa28c2_154a27.pdf
+[2025-12-08 13:48:32] [DEBUG] [app.routes.generation] Cleaned up temporary source DOCX file
+[2025-12-08 13:48:32] [DEBUG] [app.routes.generation] Cleaned up temporary PDF file     
+[2025-12-08 13:48:48] [INFO] [app.routes.generation] Generating modified contract for session: e82f8a62-8457-41ea-ad2e-2b3ad7bc17d1
+[2025-12-08 13:48:48] [INFO] [app.routes.generation] Contract language: ar, Confirmed terms: 2
+[2025-12-08 13:48:48] [INFO] [app.routes.generation] Retrieving AAOIFI context for contract regeneration...
+[2025-12-08 13:48:48] [DEBUG] [FILE_SEARCH] [c279f778] google-genai version: 1.52.0     
+[2025-12-08 13:48:50] [INFO] [FILE_SEARCH] [c279f778] File Search initialized with dedicated API Key: ****O7vg
+[2025-12-08 13:48:50] [DEBUG] [FILE_SEARCH] [c279f778] Model: gemini-2.5-flash, Store ID: fileSearchStores/aaoifi-reference-store-3rerps28a9vx
+[2025-12-08 13:48:50] [INFO] [FILE_SEARCH] [c279f778] ==================================================
+[2025-12-08 13:48:50] [INFO] [FILE_SEARCH] [c279f778] FILE SEARCH PIPELINE START        
+[2025-12-08 13:48:50] [INFO] [FILE_SEARCH] [c279f778] ==================================================
+[2025-12-08 13:48:50] [INFO] [FILE_SEARCH] [c279f778] STEP 1: Term Extraction
+[2025-12-08 13:48:50] [DEBUG] [FILE_SEARCH] [c279f778] Contract length: 3000 chars      
+[2025-12-08 13:48:50] [DEBUG] [FILE_SEARCH] [c279f778] Prompt formatted successfully    
+[2025-12-08 13:48:50] [DEBUG] [FILE_SEARCH] [c279f778] Calling Gemini API for extraction...
+في شوية مشاكل اهمها 
+ليه ميزة ال file search بتشتغل فكل حته من المشروع لية لما بعمل interact او generate modified contract بلاقيها اشتغلت في السجلات 
+المفروض ميزة file search تشتغل فقط مع خطوة التحليل 
+يعني المستخدم يرفع العقد 
+لو pdf , docx نبعتو لجيميناي يستخرج النص 
+النص دا هو الي بيتبعت ل filesarch 
+فايل سيرش يشتغل ب pipeline بتاعو كامل 
+ثم يتم ارسال نص العقد كامل وكل البيانات من filesearch لجيميناي للتحليل 
+بعد هذه الخطوة لا يجب استخدام file search مرة اخري في الجلسة 

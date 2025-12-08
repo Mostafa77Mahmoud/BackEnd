@@ -870,6 +870,201 @@ args = "python api_server.py"
 ### Performance Metrics
 
 ```mermaid
+2. **Processing Errors**
+   - AI service failures
+   - Document conversion issues
+   - Database connectivity problems
+
+3. **External Service Errors**
+   - Cloudinary upload failures
+   - MongoDB connection issues
+   - LibreOffice conversion errors
+
+### Error Response Format
+
+```json
+{
+    "error": "Descriptive error message",
+    "error_code": "ERROR_CATEGORY_SPECIFIC",
+    "timestamp": "2024-01-15T10:30:00Z",
+    "session_id": "uuid-if-available"
+}
+```
+
+## Security Considerations
+
+### Input Validation
+
+1. **File Upload Security**
+   - File type validation
+   - Size limitations (16MB max)
+   - Secure filename generation
+   - Virus scanning considerations
+
+2. **Data Sanitization**
+   - SQL injection prevention (MongoDB parameterized queries)
+   - XSS prevention in responses
+   - Path traversal protection
+
+### Authentication & Authorization
+
+1. **Session Management**
+   - Secure session cookies
+   - Session timeout implementation
+   - CSRF protection considerations
+
+2. **API Security**
+   - Rate limiting recommendations
+   - Input parameter validation
+   - Response data filtering
+
+### Data Protection
+
+1. **Sensitive Data Handling**
+   - Contract content encryption at rest
+   - Secure temporary file handling
+   - Automatic cleanup procedures
+
+2. **Privacy Compliance**
+   - Data retention policies
+   - User consent tracking
+   - Audit trail maintenance
+
+## Performance Optimization
+
+### Caching Strategy
+
+```mermaid
+graph LR
+    A[Request] --> B{Cache Check}
+    B -->|Hit| C[Return Cached Result]
+    B -->|Miss| D[Process Request]
+    D --> E[Store in Cache]
+    E --> F[Return Result]
+    
+    subgraph "Cache Layers"
+        G[Session Cache]
+        H[Analysis Results Cache]
+        I[Generated Documents Cache]
+    end
+```
+
+### Database Optimization
+
+1. **Indexing Strategy**
+   ```javascript
+   // Recommended indexes
+   db.contracts.createIndex({ "session_id": 1 })
+   db.terms.createIndex({ "session_id": 1, "term_id": 1 })
+   db.expert_feedback.createIndex({ "session_id": 1, "term_id": 1 })
+   ```
+
+2. **Query Optimization**
+   - Efficient aggregation pipelines
+   - Projection optimization
+   - Connection pooling
+
+### File Processing Optimization
+
+1. **Temporary File Management**
+   - Automatic cleanup procedures
+   - Memory-efficient streaming
+   - Parallel processing capabilities
+
+2. **Cloud Storage Optimization**
+   - Optimized upload parameters
+   - CDN utilization
+   - Bandwidth management
+
+## Deployment Architecture
+
+### Replit Deployment Configuration
+
+```toml
+# .replit configuration
+modules = ["python-3.12"]
+run = "python api_server.py"
+
+[nix]
+channel = "stable-25_05"
+
+[deployment]
+run = ["sh", "-c", "python api_server.py"]
+
+[workflows]
+runButton = "Run Server"
+
+[[workflows.workflow]]
+name = "Run Server"
+author = 46224424
+mode = "sequential"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "python api_server.py"
+```
+
+### Production Considerations
+
+1. **Scalability**
+   - Horizontal scaling capabilities
+   - Load balancing recommendations
+   - Resource monitoring
+
+2. **Availability**
+   - Health check endpoints
+   - Graceful shutdown procedures
+   - Error recovery mechanisms
+
+### Environment Setup
+
+1. **Dependencies Management**
+   ```txt
+   # Key requirements.txt entries
+   Flask>=2.3.0
+   pymongo>=4.3.0
+   google-generativeai>=0.3.0
+   python-docx>=0.8.11
+   cloudinary>=1.34.0
+   flask-cors>=4.0.0
+   ```
+
+2. **System Dependencies**
+   - LibreOffice installation
+   - Python 3.12+ runtime
+   - UTF-8 locale support
+
+## Monitoring & Maintenance
+
+### Health Monitoring
+
+1. **Application Metrics**
+   - Request response times
+   - Error rates by endpoint
+   - Processing queue lengths
+   - Memory usage patterns
+
+2. **External Service Monitoring**
+   - AI service availability
+   - Database connection health
+   - Cloud storage accessibility
+
+### Maintenance Procedures
+
+1. **Regular Tasks**
+   - Log file rotation
+   - Temporary file cleanup
+   - Database optimization
+   - Security updates
+
+2. **Backup Strategies**
+   - Database backup procedures
+   - Configuration backup
+   - Disaster recovery planning
+
+### Performance Metrics
+
+```mermaid
 graph TD
     A[Performance Monitoring] --> B[Response Time Metrics]
     A --> C[Error Rate Tracking]
@@ -888,81 +1083,40 @@ graph TD
     D --> D3[Storage Consumption]
 ```
 
-## Modern Flask Architecture (Updated 2024)
+# Backend Documentation
 
-### Application Factory Pattern
+## Overview
+The Shariaa Contract Analyzer backend is a Flask-based application that provides API endpoints for analyzing contracts against AAOIFI Sharia standards. It uses Google Gemini 2.0 Flash for AI processing, MongoDB for data persistence, and Cloudinary for file storage.
 
-The application has been restructured to use Flask's modern application factory pattern with organized blueprints:
+## Documentation Links
+- **[API Routes Documentation](ROUTES_DOCUMENTATION.md)**: Detailed reference for all API endpoints, request/response formats, and usage.
+- **[Services Documentation](SERVICES_DOCUMENTATION.md)**: In-depth explanation of the core services (AI, Database, Document Processing, File Search).
 
-**Main Factory (`app/__init__.py`):**
-```python
-def create_app(config_name='default'):
-    """Creates and configures Flask application instance"""
-    app = Flask(__name__)
-    
-    # Load environment-based configuration
-    if config_name == 'production':
-        app.config.from_object('config.production.ProductionConfig')
-    else:
-        app.config.from_object('config.default.DefaultConfig')
-    
-    # Register blueprints for modular routing
-    from app.routes.analysis import analysis_bp
-    from app.routes.generation import generation_bp
-    from app.routes.interaction import interaction_bp
-    from app.routes.admin import admin_bp
-    
-    app.register_blueprint(analysis_bp, url_prefix='/api')
-    app.register_blueprint(generation_bp, url_prefix='/api')
-    app.register_blueprint(interaction_bp, url_prefix='/api')
-    app.register_blueprint(admin_bp, url_prefix='/api')
-    
-    return app
-```
+## Architecture
+The application follows a modular structure with Blueprints for routing and dedicated service modules for core functionality.
 
-### Blueprint Organization
+### Core Components
+- **Flask App**: The central application factory (`app/__init__.py`).
+- **Routes**: Grouped by functionality (Analysis, Generation, Interaction, Admin).
+- **Services**: Encapsulated logic for external integrations and complex processing.
 
-**Analysis Blueprint (`app/routes/analysis.py`):**
-- `POST /api/analyze` - Main contract analysis endpoint
-- `GET /api/analysis/<session_id>` - Retrieve analysis results
+## Technology Stack
+- **Framework**: Flask (Python)
+- **Database**: MongoDB Atlas
+- **AI Model**: Google Gemini 2.0 Flash
+- **Storage**: Cloudinary
+- **Document Processing**: `python-docx`, LibreOffice
 
-**Generation Blueprint (`app/routes/generation.py`):**
-- `POST /api/generate_from_brief` - Generate contract from brief
-- `POST /api/generate_modified_contract` - Create modified compliant versions
+## Setup and Configuration
+Refer to `README.md` for installation and running instructions.
 
-**Interaction Blueprint (`app/routes/interaction.py`):**
-- `POST /api/interact` - Real-time Q&A consultation
-- `POST /api/review_modification` - Expert review system
+## Error Handling
+The application uses global error handlers to return consistent JSON error responses for standard HTTP status codes (400, 404, 500, 503).
 
-**Admin Blueprint (`app/routes/admin.py`):**
-- `GET /api/rules` - Sharia compliance rules endpoint
-- `GET /api/health` - Application health check
-
-### Enhanced Security Configuration
-
-**Environment-Based Configuration (`config/default.py`):**
-```python
-class DefaultConfig:
-    # Flask Configuration - REQUIRES environment variable
-    SECRET_KEY = os.environ.get('FLASK_SECRET_KEY')
-    
-    @classmethod
-    def validate_config(cls):
-        if not cls.SECRET_KEY:
-            raise ValueError("FLASK_SECRET_KEY environment variable is required")
-    
-    # External service configuration from environment
-    GOOGLE_API_KEY = os.environ.get("GOOGLE_API_KEY")
-    MONGO_URI = os.environ.get("MONGO_URI")
-    CLOUDINARY_CLOUD_NAME = os.environ.get("CLOUDINARY_CLOUD_NAME")
-    CLOUDINARY_API_KEY = os.environ.get("CLOUDINARY_API_KEY")
-    CLOUDINARY_API_SECRET = os.environ.get("CLOUDINARY_API_SECRET")
-```
-
-**CORS Security:**
-- Restricted origins for development security
-- Credentials support disabled to prevent leakage
-- Configurable for different environments
+## Security
+- **Environment Variables**: Sensitive keys are loaded from `.env`.
+- **CORS**: Configured to allow cross-origin requests (configurable).
+- **Input Validation**: Basic validation is performed on file uploads and JSON payloads.
 
 ### Robust Service Initialization
 
