@@ -82,6 +82,18 @@ def validate_term_structure(term: dict) -> Tuple[bool, str]:
     return True, "Valid term structure"
 
 
+def is_retryable_error(error: Exception) -> bool:
+    error_str = str(error).lower()
+    retryable_patterns = [
+        "503", "unavailable", "service unavailable",
+        "429", "rate limit", "quota exceeded", "resource exhausted",
+        "500", "internal server error",
+        "timeout", "timed out", "deadline exceeded",
+        "connection", "network", "socket"
+    ]
+    return any(pattern in error_str for pattern in retryable_patterns)
+
+
 class FileSearchService:
     
     CHUNK_SCHEMA = {
@@ -94,6 +106,9 @@ class FileSearchService:
             "title": "File or section title"
         }
     }
+    
+    DEFAULT_MAX_RETRIES = 3
+    DEFAULT_RETRY_BASE_DELAY = 2
 
     def __init__(self):
         self.timer = RequestTimer()
@@ -222,10 +237,13 @@ class FileSearchService:
 
         logger.info(f"Uploaded {uploaded_count}/{len(files)} files")
 
-    def extract_key_terms(self, contract_text: str) -> List[Dict]:
+    def extract_key_terms(self, contract_text: str, max_retries: int = None) -> List[Dict]:
         self.timer.start_step("term_extraction")
         logger.info("STEP 1: Term Extraction")
         logger.debug(f"Contract length: {len(contract_text)} chars")
+        
+        if max_retries is None:
+            max_retries = self.DEFAULT_MAX_RETRIES
         
         if self.client is None:
             logger.warning("FALLBACK: GenAI client not available, skipping term extraction")
@@ -251,13 +269,28 @@ class FileSearchService:
             tracer = get_request_tracer()
             api_start_time = time.time()
             
-            response = self.client.models.generate_content(
-                model=self.model_name,
-                contents=extraction_prompt,
-                config=types.GenerateContentConfig(
-                    response_modalities=["TEXT"]
-                )
-            )
+            response = None
+            retry_count = 0
+            
+            for attempt in range(max_retries + 1):
+                try:
+                    response = self.client.models.generate_content(
+                        model=self.model_name,
+                        contents=extraction_prompt,
+                        config=types.GenerateContentConfig(
+                            response_modalities=["TEXT"]
+                        )
+                    )
+                    retry_count = attempt
+                    break
+                except Exception as e:
+                    retry_count = attempt
+                    if is_retryable_error(e) and attempt < max_retries:
+                        delay = self.DEFAULT_RETRY_BASE_DELAY ** (attempt + 1)
+                        logger.warning(f"Term extraction retry {attempt + 1}/{max_retries} after {delay}s: {str(e)[:100]}")
+                        time.sleep(delay)
+                    else:
+                        raise
             
             api_duration = time.time() - api_start_time
             if tracer:
@@ -266,9 +299,14 @@ class FileSearchService:
                     method="extract_key_terms",
                     endpoint=f"models/{self.model_name}/generateContent",
                     request_data={"prompt_length": len(extraction_prompt)},
-                    response_data={"has_candidates": hasattr(response, 'candidates') and bool(response.candidates)},
+                    response_data={"has_candidates": hasattr(response, 'candidates') and bool(response.candidates), "retries": retry_count},
                     duration=api_duration
                 )
+            
+            if response is None:
+                logger.warning(f"FALLBACK: No response after {retry_count} retries")
+                self.timer.end_step()
+                return []
             
             if not hasattr(response, 'candidates') or not response.candidates:
                 logger.warning("FALLBACK: No candidates in response")
@@ -311,7 +349,7 @@ class FileSearchService:
                 else:
                     logger.debug(f"Skipping invalid term {idx}: {term_msg}")
             
-            logger.info(f"Extracted {len(valid_terms)} valid terms")
+            logger.info(f"Extracted {len(valid_terms)} valid terms (retries: {retry_count})")
             self.timer.end_step()
             return valid_terms
                 
@@ -341,6 +379,11 @@ class FileSearchService:
 
     def search_chunks(self, contract_text: str, top_k: Optional[int] = None) -> Tuple[List[Dict], List[Dict]]:
         search_timer = RequestTimer()
+        
+        general_chunks = []
+        extracted_terms = []
+        sensitive_chunks = []
+        pipeline_partial = False
         
         if self.client is None:
             logger.warning("FALLBACK: GenAI client not available, returning empty results")
@@ -377,12 +420,12 @@ class FileSearchService:
             logger.debug("Querying Gemini File Search...")
             tracer = get_request_tracer()
             
-            max_retries = 3
+            max_retries = self.DEFAULT_MAX_RETRIES
             retry_count = 0
             response = None
             general_search_start = time.time()
             
-            while retry_count < max_retries:
+            for attempt in range(max_retries + 1):
                 try:
                     response = self.client.models.generate_content(
                         model=self.model_name,
@@ -397,15 +440,14 @@ class FileSearchService:
                             response_modalities=["TEXT"]
                         )
                     )
+                    retry_count = attempt
                     break
                 except Exception as e:
-                    retry_count += 1
-                    if "503" in str(e) or "UNAVAILABLE" in str(e):
-                        logger.warning(f"Retry {retry_count}/{max_retries} due to 503")
-                        if retry_count < max_retries:
-                            time.sleep(2 ** retry_count)
-                        else:
-                            raise
+                    retry_count = attempt
+                    if is_retryable_error(e) and attempt < max_retries:
+                        delay = self.DEFAULT_RETRY_BASE_DELAY ** (attempt + 1)
+                        logger.warning(f"General search retry {attempt + 1}/{max_retries} after {delay}s: {str(e)[:100]}")
+                        time.sleep(delay)
                     else:
                         raise
 
@@ -421,10 +463,11 @@ class FileSearchService:
                     response_data={"chunks_count": len(general_chunks), "retries": retry_count},
                     duration=general_search_duration
                 )
-            logger.info(f"General search: {len(general_chunks)} chunks")
+            logger.info(f"General search: {len(general_chunks)} chunks (retries: {retry_count})")
             search_timer.end_step()
             
-            sensitive_chunks = []
+            sensitive_search_failed = False
+            sensitive_search_errors = []
             
             if extracted_terms:
                 sensitive_clauses = self._filter_sensitive_clauses(extracted_terms)
@@ -458,12 +501,12 @@ class FileSearchService:
                             clause_text=clause_text
                         )
                         
-                        max_retries_sensitive = 3
+                        max_retries_sensitive = self.DEFAULT_MAX_RETRIES
                         retry_count_sensitive = 0
                         sensitive_response = None
                         sensitive_search_start = time.time()
                         
-                        while retry_count_sensitive < max_retries_sensitive:
+                        for attempt in range(max_retries_sensitive + 1):
                             try:
                                 sensitive_response = self.client.models.generate_content(
                                     model=self.model_name,
@@ -478,12 +521,18 @@ class FileSearchService:
                                         response_modalities=["TEXT"]
                                     )
                                 )
+                                retry_count_sensitive = attempt
                                 break
                             except Exception as e:
-                                retry_count_sensitive += 1
-                                if "503" in str(e) or "UNAVAILABLE" in str(e):
-                                    time.sleep(2 ** retry_count_sensitive)
+                                retry_count_sensitive = attempt
+                                if is_retryable_error(e) and attempt < max_retries_sensitive:
+                                    delay = self.DEFAULT_RETRY_BASE_DELAY ** (attempt + 1)
+                                    logger.warning(f"Sensitive search retry {attempt + 1}/{max_retries_sensitive} for {clause_id}: {str(e)[:100]}")
+                                    time.sleep(delay)
                                 else:
+                                    sensitive_search_failed = True
+                                    sensitive_search_errors.append(f"{clause_id}: {str(e)[:50]}")
+                                    logger.error(f"Sensitive search failed for {clause_id} after {attempt + 1} attempts: {e}")
                                     break
                         
                         sensitive_search_duration = time.time() - sensitive_search_start
@@ -491,7 +540,7 @@ class FileSearchService:
                         if sensitive_response:
                             clause_chunks = self._extract_grounding_chunks(sensitive_response, 2)
                             sensitive_chunks.extend(clause_chunks)
-                            logger.debug(f"Sensitive search for {clause_id}: {len(clause_chunks)} chunks")
+                            logger.debug(f"Sensitive search for {clause_id}: {len(clause_chunks)} chunks (retries: {retry_count_sensitive})")
                             
                             if tracer:
                                 tracer.record_api_call(
@@ -502,6 +551,10 @@ class FileSearchService:
                                     response_data={"chunks_count": len(clause_chunks), "retries": retry_count_sensitive},
                                     duration=sensitive_search_duration
                                 )
+                    
+                    if sensitive_search_failed:
+                        pipeline_partial = True
+                        logger.warning(f"Sensitive search had {len(sensitive_search_errors)} failures, continuing with partial results")
                     
                     search_timer.end_step()
                 else:
@@ -530,16 +583,27 @@ class FileSearchService:
             search_timer.end_step()
             
             timing = search_timer.get_summary()
+            status = "PARTIAL" if pipeline_partial else "COMPLETE"
             logger.info(f"Total unique chunks: {len(all_chunks)}")
             logger.info(f"Pipeline time: {timing['total_time_seconds']}s")
             logger.info("=" * 50)
-            logger.info("FILE SEARCH PIPELINE COMPLETE")
+            logger.info(f"FILE SEARCH PIPELINE {status}")
             logger.info("=" * 50)
             
             return all_chunks, extracted_terms
 
         except Exception as e:
             logger.error(f"Search pipeline failed: {e}")
+            
+            if general_chunks or extracted_terms:
+                logger.warning("PARTIAL RESULTS: Returning data collected before failure")
+                
+                for idx, chunk in enumerate(general_chunks):
+                    chunk["uid"] = f"chunk_{idx + 1}"
+                
+                logger.info(f"Returning partial: {len(general_chunks)} chunks, {len(extracted_terms)} terms")
+                return general_chunks, extracted_terms
+            
             raise
 
     def _extract_grounding_chunks(self, response, top_k: int) -> List[Dict]:
