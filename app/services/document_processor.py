@@ -387,13 +387,27 @@ def create_docx_from_llm_markdown(
             
             for term_idx, term_data in enumerate(terms_for_marking):
                 term_start_time = time.time()
-                term_text_original = term_data.get("term_text", "") 
-                if not term_text_original.strip(): 
+                
+                full_clause_text = term_data.get("full_clause_text", "")
+                term_title = term_data.get("term_title", "")
+                term_text_original = term_data.get("term_text", "")
+                
+                search_text = full_clause_text.strip() if full_clause_text.strip() else term_text_original
+                
+                if not search_text.strip(): 
                     continue
                 
                 search_start_pos = current_markdown_pos
                 
-                match_result = text_matcher.find_term(term_text_original, search_start_pos)
+                match_result = text_matcher.find_term(search_text, search_start_pos)
+                
+                if not match_result and term_title.strip():
+                    logger.debug(f"Trying fallback search with term_title for '{term_data.get('term_id')}'")
+                    match_result = text_matcher.find_term(term_title.strip(), search_start_pos)
+                
+                if not match_result and full_clause_text.strip() and term_text_original.strip():
+                    logger.debug(f"Trying fallback search with term_text for '{term_data.get('term_id')}'")
+                    match_result = text_matcher.find_term(term_text_original, search_start_pos)
                 
                 match = None
                 if match_result:
@@ -474,7 +488,11 @@ def create_docx_from_llm_markdown(
                     current_markdown_pos = found_pos_absolute + len(matched_text_in_doc)
                 else:
                     logger.warning(f"Term '{term_data.get('term_id')}' text not found sequentially from pos {search_start_pos}")
-                    global_match = text_matcher.find_term(term_text_original, 0)
+                    global_match = text_matcher.find_term(search_text, 0)
+                    if not global_match and term_title.strip():
+                        global_match = text_matcher.find_term(term_title.strip(), 0)
+                    if not global_match and term_text_original.strip():
+                        global_match = text_matcher.find_term(term_text_original.strip(), 0)
                     if global_match:
                         global_pos, global_end, _ = global_match
                         logger.info(f"Term '{term_data.get('term_id')}' found at global pos {global_pos} (out of sequence)")

@@ -438,7 +438,12 @@ def apply_confirmed_terms_to_text(source_text: str, confirmed_terms: dict, contr
             continue
         
         original_text = term_data.get("original_text", "")
+        full_clause_text = term_data.get("full_clause_text", "")
+        term_title = term_data.get("term_title", "")
         confirmed_text = term_data.get("confirmed_text", "")
+        
+        if full_clause_text.strip():
+            original_text = full_clause_text
         
         logger.debug(f"Term {term_id}: original={len(original_text)} chars, confirmed={len(confirmed_text)} chars")
         
