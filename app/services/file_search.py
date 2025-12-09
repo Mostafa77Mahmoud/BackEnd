@@ -149,7 +149,13 @@ class FileSearchService:
         self.top_k_general = current_app.config.get('TOP_K_CHUNKS', 15)
         self.top_k_sensitive = current_app.config.get('TOP_K_SENSITIVE', 5)
         
+        # Sensitive search rate limiting settings
+        self.enable_sensitive_search = current_app.config.get('ENABLE_SENSITIVE_SEARCH', True)
+        self.sensitive_search_max_workers = current_app.config.get('SENSITIVE_SEARCH_MAX_WORKERS', 2)
+        self.sensitive_search_delay = current_app.config.get('SENSITIVE_SEARCH_DELAY', 1.0)
+        
         logger.debug(f"Model: {self.model_name}, Store ID: {self.store_id}, Temperature: {self.temperature}")
+        logger.debug(f"Sensitive search: enabled={self.enable_sensitive_search}, workers={self.sensitive_search_max_workers}, delay={self.sensitive_search_delay}s")
 
     @property
     def extract_prompt_template(self):
@@ -589,27 +595,42 @@ class FileSearchService:
             sensitive_search_failed = False
             sensitive_search_errors = []
             
-            if extracted_terms:
+            # Check if sensitive search is enabled
+            if not self.enable_sensitive_search:
+                logger.info("STEP 3: Sensitive Search DISABLED (ENABLE_SENSITIVE_SEARCH=False)")
+            elif extracted_terms:
                 sensitive_clauses = self._filter_sensitive_clauses(extracted_terms)
                 
                 if sensitive_clauses:
                     search_timer.start_step("sensitive_search")
-                    max_workers = min(len(sensitive_clauses), 5)
-                    logger.info(f"STEP 3: Sensitive Search ({len(sensitive_clauses)} clauses, {max_workers} parallel workers)")
+                    # Use configurable max_workers with rate limiting
+                    max_workers = min(len(sensitive_clauses), self.sensitive_search_max_workers)
+                    logger.info(f"STEP 3: Sensitive Search ({len(sensitive_clauses)} clauses, {max_workers} workers, {self.sensitive_search_delay}s delay)")
                     
+                    # Rate-limited parallel execution
                     with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                        future_to_clause = {
-                            executor.submit(self._search_single_sensitive_clause, clause, tracer): clause
-                            for clause in sensitive_clauses
-                        }
+                        futures = []
+                        for idx, clause in enumerate(sensitive_clauses):
+                            # Add delay between submissions to respect rate limits
+                            if idx > 0 and self.sensitive_search_delay > 0:
+                                time.sleep(self.sensitive_search_delay)
+                            futures.append(executor.submit(self._search_single_sensitive_clause, clause, tracer))
                         
-                        for future in as_completed(future_to_clause):
-                            clause_id, clause_chunks, error = future.result()
-                            if error:
+                        for future in as_completed(futures):
+                            try:
+                                clause_id, clause_chunks, error = future.result()
+                                if error:
+                                    sensitive_search_failed = True
+                                    sensitive_search_errors.append(error)
+                                    # Check for rate limit errors
+                                    if "429" in str(error) or "quota" in str(error).lower():
+                                        logger.warning("Rate limit detected, skipping remaining sensitive searches")
+                                        break
+                                else:
+                                    sensitive_chunks.extend(clause_chunks)
+                            except Exception as e:
+                                logger.error(f"Sensitive search future error: {e}")
                                 sensitive_search_failed = True
-                                sensitive_search_errors.append(error)
-                            else:
-                                sensitive_chunks.extend(clause_chunks)
                     
                     if sensitive_search_failed:
                         pipeline_partial = True

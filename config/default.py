@@ -65,6 +65,14 @@ class DefaultConfig:
     TOP_K_CHUNKS: int = int(os.environ.get("TOP_K_CHUNKS", "15"))
     TOP_K_SENSITIVE: int = int(os.environ.get("TOP_K_SENSITIVE", "5"))
     
+    # Sensitive Search Configuration
+    # Set to False to disable parallel sensitive search (saves API quota)
+    ENABLE_SENSITIVE_SEARCH: bool = os.environ.get("ENABLE_SENSITIVE_SEARCH", "True").lower() == "true"
+    # Maximum parallel workers for sensitive search (reduce for free API limits)
+    SENSITIVE_SEARCH_MAX_WORKERS: int = int(os.environ.get("SENSITIVE_SEARCH_MAX_WORKERS", "2"))
+    # Delay between sensitive search requests in seconds (rate limiting)
+    SENSITIVE_SEARCH_DELAY: float = float(os.environ.get("SENSITIVE_SEARCH_DELAY", "1.0"))
+    
     # === PROMPTS - Loaded from prompts/ directory ===
     
     # Extraction Prompt

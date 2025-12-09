@@ -33,6 +33,16 @@ OUTPUT REQUIREMENTS:
   - Clause or paragraph number (if present)
 - The content must be suitable for direct citation without interpretation.
 - Fewer, precise chunks are preferred over many weak ones.
+- Return between 5-15 chunks maximum, prioritizing quality over quantity.
+
+EXAMPLE OUTPUT FORMAT:
+```
+[Standard: Murabaha | No: 8 | Clause: 3/1/1]
+"It is not permissible to charge any additional amount for delayed payment..."
+
+[Standard: Guarantees | No: 5 | Clause: 2/4]
+"The guarantor shall not receive any fee or compensation for providing the guarantee..."
+```
 
 INPUT CONTEXT (CONTRACT TEXT):
-<<<PASTE CONTRACT OR CLAUSE TEXT HERE>>>
+{extracted_clauses}
