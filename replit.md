@@ -15,7 +15,9 @@ The backend is built with Flask, utilizing a blueprint pattern for modularity. K
 
 -   **UI/UX Decisions**: Not specified in detail, but the system supports contract previews and PDF downloads, implying a need for accurate rendering of legal documents.
 -   **Technical Implementations**:
-    *   **AI Service**: Integration with Google Gemini 2.0 Flash for core Sharia compliance analysis, term extraction, and interactive Q&A. Dedicated API keys are used for general AI and file search functionalities.
+    *   **AI Service**: Integration with Google Gemini 2.5 Flash for core Sharia compliance analysis, term extraction, and interactive Q&A. Dedicated API keys are used for general AI and file search functionalities.
+    *   **Thinking Mode**: Gemini 2.5+ thinking mode enabled for deep analysis and reasoning. Configurable via `ENABLE_THINKING_MODE`, `THINKING_BUDGET` (default: 4096 tokens), and `INCLUDE_THINKING_SUMMARY` environment variables.
+    *   **Chunk Binding Verification**: Comprehensive monitoring ensures AAOIFI chunks from File Search are reliably bound to contract text for analysis. Includes validation reports tracking valid/empty/structured chunks.
     *   **Document Processing**: Handles various formats (DOCX, PDF, TXT) using libraries like `python-docx` and `LibreOffice` for conversions and text extraction. Includes robust text matching and replacement logic for contract modifications, handling formatting differences and preserving structural markers.
     *   **Cloud Storage**: Cloudinary is used for storing and managing uploaded documents, with specific configurations for PDF access.
     *   **Database**: MongoDB Atlas serves as the primary database for storing analysis results, session details, extracted terms, and expert feedback.
