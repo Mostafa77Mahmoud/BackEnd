@@ -40,3 +40,17 @@ python-dotenv
 requests
 unidecode
 werkzeug
+cloudinary
+dnspython
+Flask
+Flask-CORS
+google-genai
+gunicorn
+langdetect
+pymongo[srv]
+pytest
+python-docx
+python-dotenv
+requests
+unidecode
+werkzeug
