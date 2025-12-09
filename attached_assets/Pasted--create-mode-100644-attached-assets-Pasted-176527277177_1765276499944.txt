@@ -1,0 +1,168 @@
+اي الي حصل؟
+ create mode 100644 attached_assets/Pasted---1765272771778_1765272771779.txt
+PS C:\Users\Mostafa\Downloads\BackEnd (Restrycterd+newENdPoints)\BackEnd> python run.py 
+[2025-12-09 12:07:14] [INFO] [root] ==================================================
+[2025-12-09 12:07:14] [INFO] [root] SHARIAA CONTRACT ANALYZER - STARTUP
+[2025-12-09 12:07:14] [INFO] [root] ==================================================
+[2025-12-09 12:07:14] [INFO] [root] Debug Mode: True
+[2025-12-09 12:07:14] [INFO] [app.services.database] Attempting to connect to MongoDB...
+[2025-12-09 12:07:16] [INFO] [app.services.database] Successfully connected to MongoDB: shariaa_analyzer_db
+[2025-12-09 12:07:17] [INFO] [app.services.cloudinary_service] Cloudinary configured successfully
+[2025-12-09 12:07:18] [INFO] [app.services.ai_service] GEMINI_API_KEY configured: AIzaSyAK...5NAk
+[2025-12-09 12:07:18] [INFO] [app.services.ai_service] GEMINI_FILE_SEARCH_API_KEY configured: AIzaSyAM...O7vg
+[2025-12-09 12:07:18] [INFO] [app.services.ai_service] Google GenAI service initialized (client will be created per request)
+ * Serving Flask app 'app'
+ * Debug mode: on
+[2025-12-09 12:08:37] [INFO] [ROUTE] [fecf7793] Starting analysis for session: 79ab66be-32f9-44d2-8e6f-ccad6a61e713
+[2025-12-09 12:08:39] [INFO] [ROUTE] [fecf7793] Processing: Document_51.pdf
+[2025-12-09 12:08:39] [DEBUG] [app.utils.text_processing] Generated safe public_id: original_Document_51_359fea from base_name: Document_51
+[2025-12-09 12:08:43] [INFO] [ROUTE] [fecf7793] Uploaded to Cloudinary (1693927 bytes)
+[2025-12-09 12:08:43] [DEBUG] [SYSTEM] [fecf7793] Downloading from URL: https://res.cloudinary.com/dr6jicgld/image/upload/v1765274922/shariaa_analyzer_uploads/79ab66be-32f9-44d2-8e6f-ccad6a61e713/original_contracts/original_Document_51_359fea.pdf
+[2025-12-09 12:08:45] [DEBUG] [SYSTEM] [fecf7793] File downloaded to: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpsi7ow4dy.pdf
+[2025-12-09 12:08:45] [DEBUG] [ROUTE] [fecf7793] Extension: .pdf
+[2025-12-09 12:08:45] [INFO] [ROUTE] [fecf7793] Processing .PDF
+[2025-12-09 12:08:45] [INFO] [app.services.ai_service] Extracting text from file: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpsi7ow4dy.pdf    
+[2025-12-09 12:08:45] [INFO] [app.services.ai_service] Creating GenAI client with API Key: AIzaSyAK...5NAk
+[2025-12-09 12:09:05] [INFO] [app.services.ai_service] Token usage for file extraction C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpsi7ow4dy.pdf: input=2117, output=2199, total=5733
+[2025-12-09 12:09:05] [INFO] [app.services.ai_service] Successfully extracted text from C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpsi7ow4dy.pdf. Text length: 6406
+[2025-12-09 12:09:05] [INFO] [ROUTE] [fecf7793] Extracted 6361 chars from .PDF
+[2025-12-09 12:09:05] [DEBUG] [ROUTE] [fecf7793] Language: ar
+[2025-12-09 12:09:05] [INFO] [ROUTE] [fecf7793] Starting AAOIFI context retrieval       
+[2025-12-09 12:09:05] [DEBUG] [FILE_SEARCH] [fecf7793] google-genai version: 1.52.0     
+[2025-12-09 12:09:06] [INFO] [FILE_SEARCH] [fecf7793] File Search initialized with dedicated API Key: ****O7vg
+[2025-12-09 12:09:06] [DEBUG] [FILE_SEARCH] [fecf7793] Model: gemini-2.5-flash, Store ID: fileSearchStores/aaoifi-reference-store-3rerps28a9vx, Temperature: 0
+[2025-12-09 12:09:06] [DEBUG] [FILE_SEARCH] [fecf7793] Sensitive search: enabled=True, workers=2, delay=1.0s
+[2025-12-09 12:09:06] [INFO] [FILE_SEARCH] [fecf7793] ==================================================
+[2025-12-09 12:09:06] [INFO] [FILE_SEARCH] [fecf7793] FILE SEARCH PIPELINE START        
+[2025-12-09 12:09:06] [INFO] [FILE_SEARCH] [fecf7793] ==================================================
+[2025-12-09 12:09:06] [INFO] [FILE_SEARCH] [fecf7793] STEP 1: Term Extraction
+[2025-12-09 12:09:06] [DEBUG] [FILE_SEARCH] [fecf7793] Contract length: 6406 chars      
+[2025-12-09 12:09:06] [DEBUG] [FILE_SEARCH] [fecf7793] Prompt formatted successfully    
+[2025-12-09 12:09:06] [DEBUG] [FILE_SEARCH] [fecf7793] Calling Gemini API for extraction with temperature=0 for deterministic results...
+[2025-12-09 12:09:34] [DEBUG] [FILE_SEARCH] [fecf7793] Response length: 4173 chars
+[2025-12-09 12:09:34] [INFO] [FILE_SEARCH] [fecf7793] Extracted 7 valid terms (retries: 0)
+[2025-12-09 12:09:34] [DEBUG] [FILE_SEARCH] [fecf7793] Cache SET for contract hash: b72536de...
+[2025-12-09 12:09:34] [INFO] [FILE_SEARCH] [fecf7793] STEP 2: General Search
+[2025-12-09 12:09:34] [DEBUG] [FILE_SEARCH] [fecf7793] Using top_k=10
+[2025-12-09 12:09:34] [ERROR] [FILE_SEARCH] [fecf7793] Search pipeline failed: '\n    "standard_name_ar"'
+[2025-12-09 12:09:34] [WARNING] [FILE_SEARCH] [fecf7793] PARTIAL RESULTS: Returning data collected before failure
+[2025-12-09 12:09:34] [INFO] [FILE_SEARCH] [fecf7793] Returning partial: 0 chunks (0 general + 0 sensitive), 7 terms
+[2025-12-09 12:09:34] [WARNING] [ROUTE] [fecf7793] No chunks retrieved
+[2025-12-09 12:09:34] [ERROR] [ROUTE] [fecf7793] Analysis failed: '\n    "term_id"'     
+Traceback (most recent call last):
+  File "C:\Users\Mostafa\Downloads\BackEnd (Restrycterd+newENdPoints)\BackEnd\app\routes\analysis_upload.py", line 421, in analyze_file
+    formatted_sys_prompt = sys_prompt.format(
+                           ^^^^^^^^^^^^^^^^^^
+KeyError: '\n    "term_id"'
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] ==================================================
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] REQUEST SUMMARY
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] ==================================================
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] Trace ID: fecf7793
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] File Size: 1693927 bytes
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] Extracted Characters: 6361
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] Analysis Status: exception
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] File Search Status: no_results
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] Total Time: 56.84 seconds
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] Step Times:
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793]   - initialization: 1.98s
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793]   - upload: 5.25s
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793]   - text_extraction: 20.5s
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793]   - file_search: 28.82s
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] ==================================================
+[2025-12-09 12:09:34] [INFO] [ROUTE] [fecf7793] Trace saved: traces\trace_fecf7793_20251209_120837.json
+[2025-12-09 12:09:34] [DEBUG] [ROUTE] [fecf7793] Cleaned temp processing file
+[2025-12-09 12:28:29] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:29] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:30] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:30] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:30] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:30] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:32] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:32] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:34] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:34] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:35] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:28:35] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:29:05] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:29:05] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:29:05] [INFO] [app.routes.analysis_terms] Retrieving terms for session: session_1765276107242_5nbu763hw
+[2025-12-09 12:29:22] [INFO] [ROUTE] [472e2ceb] Starting analysis for session: b2974213-9aff-41f1-aaa3-73b30344957d
+[2025-12-09 12:29:24] [INFO] [ROUTE] [472e2ceb] Processing: polozhenie_2025-2026.pdf
+[2025-12-09 12:29:24] [DEBUG] [app.utils.text_processing] Generated safe public_id: original_polozhenie_2025-2026_89c733 from base_name: polozhenie_2025-2026
+[2025-12-09 12:29:27] [INFO] [ROUTE] [472e2ceb] Uploaded to Cloudinary (579250 bytes)
+[2025-12-09 12:29:27] [DEBUG] [SYSTEM] [472e2ceb] Downloading from URL: https://res.cloudinary.com/dr6jicgld/image/upload/v1765276166/shariaa_analyzer_uploads/b2974213-9aff-41f1-aaa3-73b30344957d/original_contracts/original_polozhenie_2025-2026_89c733.pdf
+[2025-12-09 12:29:28] [DEBUG] [SYSTEM] [472e2ceb] File downloaded to: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpax9ky13b.pdf
+[2025-12-09 12:29:28] [DEBUG] [ROUTE] [472e2ceb] Extension: .pdf
+[2025-12-09 12:29:28] [INFO] [ROUTE] [472e2ceb] Processing .PDF
+[2025-12-09 12:29:28] [INFO] [app.services.ai_service] Extracting text from file: C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpax9ky13b.pdf    
+[2025-12-09 12:29:28] [INFO] [app.services.ai_service] Creating GenAI client with API Key: AIzaSyAK...5NAk
+[2025-12-09 12:29:59] [INFO] [app.services.ai_service] Token usage for file extraction C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpax9ky13b.pdf: input=3665, output=5853, total=10249
+[2025-12-09 12:29:59] [INFO] [app.services.ai_service] Successfully extracted text from C:\Users\Mostafa\AppData\Local\Temp\shariaa_analyzer_temp\processing_files\tmpax9ky13b.pdf. Text length: 22036
+[2025-12-09 12:29:59] [INFO] [ROUTE] [472e2ceb] Extracted 22022 chars from .PDF
+[2025-12-09 12:29:59] [DEBUG] [ROUTE] [472e2ceb] Language: en
+[2025-12-09 12:29:59] [INFO] [ROUTE] [472e2ceb] Starting AAOIFI context retrieval       
+[2025-12-09 12:29:59] [DEBUG] [FILE_SEARCH] [472e2ceb] google-genai version: 1.52.0     
+[2025-12-09 12:30:00] [INFO] [FILE_SEARCH] [472e2ceb] File Search initialized with dedicated API Key: ****O7vg
+[2025-12-09 12:30:00] [DEBUG] [FILE_SEARCH] [472e2ceb] Model: gemini-2.5-flash, Store ID: fileSearchStores/aaoifi-reference-store-3rerps28a9vx, Temperature: 0
+[2025-12-09 12:30:00] [DEBUG] [FILE_SEARCH] [472e2ceb] Sensitive search: enabled=True, workers=2, delay=1.0s
+[2025-12-09 12:30:00] [INFO] [FILE_SEARCH] [472e2ceb] ==================================================
+[2025-12-09 12:30:00] [INFO] [FILE_SEARCH] [472e2ceb] FILE SEARCH PIPELINE START        
+[2025-12-09 12:30:00] [INFO] [FILE_SEARCH] [472e2ceb] ==================================================
+[2025-12-09 12:30:00] [INFO] [FILE_SEARCH] [472e2ceb] STEP 1: Term Extraction
+[2025-12-09 12:30:00] [DEBUG] [FILE_SEARCH] [472e2ceb] Contract length: 22036 chars     
+[2025-12-09 12:30:00] [DEBUG] [FILE_SEARCH] [472e2ceb] Prompt formatted successfully    
+[2025-12-09 12:30:00] [DEBUG] [FILE_SEARCH] [472e2ceb] Calling Gemini API for extraction with temperature=0 for deterministic results...
+[2025-12-09 12:30:38] [DEBUG] [FILE_SEARCH] [472e2ceb] Response length: 6330 chars
+[2025-12-09 12:30:38] [INFO] [FILE_SEARCH] [472e2ceb] Extracted 8 valid terms (retries: 0)
+[2025-12-09 12:30:38] [DEBUG] [FILE_SEARCH] [472e2ceb] Cache SET for contract hash: f0b73d15...
+[2025-12-09 12:30:38] [INFO] [FILE_SEARCH] [472e2ceb] STEP 2: General Search
+[2025-12-09 12:30:38] [DEBUG] [FILE_SEARCH] [472e2ceb] Using top_k=10
+[2025-12-09 12:30:38] [ERROR] [FILE_SEARCH] [472e2ceb] Search pipeline failed: '\n    "standard_name_ar"'
+[2025-12-09 12:30:38] [WARNING] [FILE_SEARCH] [472e2ceb] PARTIAL RESULTS: Returning data collected before failure
+[2025-12-09 12:30:38] [INFO] [FILE_SEARCH] [472e2ceb] Returning partial: 0 chunks (0 general + 0 sensitive), 8 terms
+[2025-12-09 12:30:38] [WARNING] [ROUTE] [472e2ceb] No chunks retrieved
+[2025-12-09 12:30:38] [ERROR] [ROUTE] [472e2ceb] Analysis failed: '\n    "term_id"'     
+Traceback (most recent call last):
+  File "C:\Users\Mostafa\Downloads\BackEnd (Restrycterd+newENdPoints)\BackEnd\app\routes\analysis_upload.py", line 421, in analyze_file
+    formatted_sys_prompt = sys_prompt.format(
+                           ^^^^^^^^^^^^^^^^^^
+KeyError: '\n    "term_id"'
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] ==================================================
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] REQUEST SUMMARY
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] ==================================================
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] Trace ID: 472e2ceb
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] File Size: 579250 bytes
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] Extracted Characters: 22022
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] Analysis Status: exception
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] File Search Status: no_results
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] Total Time: 75.47 seconds
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] Step Times:
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb]   - initialization: 1.59s
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb]   - upload: 4.06s
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb]   - text_extraction: 30.75s
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb]   - file_search: 39.06s
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] ==================================================
+[2025-12-09 12:30:38] [INFO] [ROUTE] [472e2ceb] Trace saved: traces\trace_472e2ceb_20251209_122922.json
+[2025-12-09 12:30:38] [DEBUG] [ROUTE] [472e2ceb] Cleaned temp processing file
+[2025-12-09 12:30:40] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:40] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:41] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:41] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:43] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:43] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:45] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:45] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:47] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:47] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:48] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:30:48] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:30:49] [INFO] [app.routes.analysis_terms] Retrieving terms for session: session_1765276107242_5nbu763hw
+[2025-12-09 12:30:49] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:49] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:49] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:49] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:50] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:30:50] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276240697_lqxnzgdwe
+[2025-12-09 12:31:06] [INFO] [app.routes.analysis_terms] Retrieving session details for ID: session_1765276107242_5nbu763hw
+[2025-12-09 12:31:06] [WARNING] [app.routes.analysis_terms] Session not found: session_1765276107242_5nbu763hw
+[2025-12-09 12:31:07] [INFO] [app.routes.analysis_terms] Retrieving terms for session: session_1765276107242_5nbu763hw
