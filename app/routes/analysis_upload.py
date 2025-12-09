@@ -355,13 +355,43 @@ def analyze_file():
             
             if aaoifi_chunks:
                 logger.info(f"Retrieved {len(aaoifi_chunks)} chunks")
+                aaoifi_chunks.sort(key=lambda x: x.get("score", 0), reverse=True)
                 chunk_texts = []
                 for idx, chunk in enumerate(aaoifi_chunks, 1):
                     chunk_text = chunk.get("chunk_text", "")
                     if chunk_text:
-                        chunk_texts.append(f"[معيار AAOIFI {idx}]\n{chunk_text}")
+                        is_structured = chunk.get("is_structured", False)
+                        if is_structured:
+                            standard_name = chunk.get("title") or "معيار AAOIFI"
+                            standard_no = chunk.get("standard_no", "")
+                            clause_no = chunk.get("clause_no", "")
+                            relation_type = chunk.get("relation_type")
+                            
+                            header_parts = [f"[{standard_name}"]
+                            if standard_no:
+                                header_parts.append(f" - رقم المعيار: {standard_no}")
+                            if clause_no:
+                                header_parts.append(f" - البند: {clause_no}")
+                            header_parts.append("]")
+                            
+                            if relation_type:
+                                relation_ar = {
+                                    "governs": "يحكم",
+                                    "permits": "يبيح",
+                                    "restricts": "يقيد",
+                                    "prohibits": "يحرم"
+                                }.get(relation_type)
+                                if relation_ar:
+                                    header_parts.append(f" ({relation_ar})")
+                            
+                            header = "".join(header_parts)
+                            chunk_texts.append(f"{header}\n{chunk_text}")
+                        else:
+                            title = chunk.get("title") or f"معيار AAOIFI {idx}"
+                            chunk_texts.append(f"[{title}]\n{chunk_text}")
                 aaoifi_context = "\n\n".join(chunk_texts) if chunk_texts else ""
-                logger.info(f"Context size: {len(aaoifi_context)} chars")
+                structured_count = sum(1 for c in aaoifi_chunks if c.get('is_structured', False))
+                logger.info(f"Context size: {len(aaoifi_context)} chars, structured: {structured_count}/{len(aaoifi_chunks)}")
                 file_search_status = "success"
                 
                 tracer.add_sub_step("aaoifi_chunks", {

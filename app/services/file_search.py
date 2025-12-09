@@ -84,6 +84,30 @@ def validate_term_structure(term: dict) -> Tuple[bool, str]:
     return True, "Valid term structure"
 
 
+def validate_aaoifi_chunk_structure(chunk: dict) -> Tuple[bool, str]:
+    """Validate structured AAOIFI chunk from FILE_SEARCH_PROMPT output."""
+    required_fields = ["excerpt_ar"]
+    
+    for field in required_fields:
+        if field not in chunk:
+            return False, f"Missing required field: {field}"
+        if not chunk[field] or not isinstance(chunk[field], str):
+            return False, f"Field {field} must be non-empty string"
+    
+    if "confidence" in chunk:
+        conf = chunk["confidence"]
+        if not isinstance(conf, (int, float)) or conf < 0 or conf > 1:
+            chunk["confidence"] = 0.8
+    
+    valid_relation_types = ["governs", "permits", "restricts", "prohibits"]
+    if "relation_type" in chunk:
+        if chunk["relation_type"] not in valid_relation_types:
+            logger.debug(f"Unknown relation_type '{chunk['relation_type']}', setting to None")
+            chunk["relation_type"] = None
+    
+    return True, "Valid AAOIFI chunk structure"
+
+
 def is_retryable_error(error: Exception) -> bool:
     error_str = str(error).lower()
     retryable_patterns = [
@@ -695,7 +719,73 @@ class FileSearchService:
             
             raise
 
+    def _parse_structured_response(self, response) -> List[Dict]:
+        """
+        Parse structured JSON response from model that follows FILE_SEARCH_PROMPT format.
+        Returns list of structured AAOIFI chunks with rich metadata.
+        Concatenates all parts to handle multi-part responses.
+        """
+        if not hasattr(response, 'candidates') or not response.candidates:
+            return []
+        
+        candidate = response.candidates[0]
+        if not hasattr(candidate, 'content') or not candidate.content:
+            return []
+        if not hasattr(candidate.content, 'parts') or not candidate.content.parts:
+            return []
+        
+        all_text_parts = []
+        for part in candidate.content.parts:
+            if hasattr(part, 'text') and part.text:
+                all_text_parts.append(part.text)
+        
+        response_text = "\n".join(all_text_parts)
+        if not response_text:
+            return []
+        
+        is_valid, parsed_chunks, validation_msg = validate_json_response(response_text, "array")
+        
+        if not is_valid:
+            logger.debug(f"Structured response parse failed: {validation_msg}")
+            return []
+        
+        valid_chunks = []
+        for idx, chunk in enumerate(parsed_chunks):
+            is_chunk_valid, chunk_msg = validate_aaoifi_chunk_structure(chunk)
+            if is_chunk_valid:
+                structured_chunk = {
+                    "uid": f"aaoifi_{idx + 1}",
+                    "chunk_text": chunk.get("excerpt_ar", ""),
+                    "score": float(chunk.get("confidence", 0.8)),
+                    "uri": chunk.get("source_uri"),
+                    "title": chunk.get("standard_name_ar"),
+                    "standard_no": chunk.get("standard_no"),
+                    "clause_no": chunk.get("clause_no"),
+                    "page_no": chunk.get("page_no"),
+                    "paragraph_id": chunk.get("paragraph_id"),
+                    "relation_type": chunk.get("relation_type"),
+                    "matched_terms": chunk.get("matched_terms", []),
+                    "is_structured": True
+                }
+                valid_chunks.append(structured_chunk)
+            else:
+                logger.debug(f"Skipping invalid AAOIFI chunk {idx}: {chunk_msg}")
+        
+        if valid_chunks:
+            valid_chunks.sort(key=lambda x: x.get("score", 0), reverse=True)
+            logger.info(f"Parsed {len(valid_chunks)} structured AAOIFI chunks from model response")
+        
+        return valid_chunks
+
     def _extract_grounding_chunks(self, response, top_k: int) -> List[Dict]:
+        """
+        Extract chunks from response. First tries structured JSON parsing,
+        then falls back to grounding metadata extraction.
+        """
+        structured_chunks = self._parse_structured_response(response)
+        if structured_chunks:
+            return structured_chunks[:top_k]
+        
         chunks = []
 
         if not hasattr(response, 'candidates') or not response.candidates:
@@ -721,7 +811,8 @@ class FileSearchService:
                     "chunk_text": "",
                     "score": 1.0 - (idx * 0.05),
                     "uri": None,
-                    "title": None
+                    "title": None,
+                    "is_structured": False
                 }
 
                 if hasattr(chunk, 'retrieved_context') and chunk.retrieved_context:
@@ -749,7 +840,8 @@ class FileSearchService:
                     "chunk_text": "",
                     "score": 0.0,
                     "uri": None,
-                    "title": "Generated Summary"
+                    "title": "Generated Summary",
+                    "is_structured": False
                 }
 
                 if hasattr(support, 'segment') and support.segment:
