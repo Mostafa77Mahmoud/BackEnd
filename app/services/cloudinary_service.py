@@ -9,7 +9,6 @@ import os
 import uuid
 import time
 import logging
-import traceback
 from app.utils.logging_utils import get_request_tracer
 
 logger = logging.getLogger(__name__)
@@ -120,10 +119,8 @@ def upload_to_cloudinary_helper(
         return upload_result
         
     except cloudinary.exceptions.Error as e:
-        logger.error(f"ERROR_DEBUG: Cloudinary API Error during upload for {local_file_path}: {e}")
-        traceback.print_exc()
+        logger.error(f"Cloudinary API Error during upload for {local_file_path}: {e}", exc_info=True)
         return None
     except Exception as e:
-        logger.error(f"ERROR_DEBUG: Cloudinary upload EXCEPTION for {local_file_path}: {e}")
-        traceback.print_exc()
+        logger.error(f"Cloudinary upload exception for {local_file_path}: {e}", exc_info=True)
         return None

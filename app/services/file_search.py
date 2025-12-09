@@ -2,6 +2,7 @@ import time
 import json
 import re
 import hashlib
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from google import genai
 from google.genai import types
 from pathlib import Path
@@ -416,6 +417,85 @@ class FileSearchService:
         
         return sensitive_clauses
 
+    def _search_single_sensitive_clause(self, sensitive_clause: Dict, tracer) -> Tuple[str, List[Dict], Optional[str]]:
+        """
+        Search for a single sensitive clause. Returns (clause_id, chunks, error).
+        This method is designed to be called in parallel.
+        """
+        clause_id = sensitive_clause.get("term_id", "unknown")
+        clause_text = sensitive_clause.get("term_text", "")
+        issues = sensitive_clause.get("potential_issues", [])
+        
+        sensitive_search_prompt = """قم بالبحث الدقيق والعميق في معايير AAOIFI عن المقاطع التي تتعلق مباشرة بالمشاكل الشرعية التالية:
+
+مشاكل شرعية:
+{issues}
+
+نص البند من العقد:
+{clause_text}
+
+ابحث عن:
+1. المعايير الشرعية الدقيقة.
+2. النصوص التي تحتوي على كلمات حاسمة: "لا يجوز"، "محرم"، "يبطل".
+3. أمثلة على حالات مشابهة.
+
+ركز على الدقة الشرعية العالية.""".format(
+            issues="\n".join(issues),
+            clause_text=clause_text
+        )
+        
+        max_retries = self.DEFAULT_MAX_RETRIES
+        retry_count = 0
+        sensitive_response = None
+        search_start = time.time()
+        
+        for attempt in range(max_retries + 1):
+            try:
+                sensitive_response = self.client.models.generate_content(
+                    model=self.model_name,
+                    contents=sensitive_search_prompt,
+                    config=types.GenerateContentConfig(
+                        temperature=0.0,
+                        tools=[types.Tool(
+                            file_search=types.FileSearch(
+                                file_search_store_names=[self.store_id],
+                                top_k=self.top_k_sensitive
+                            )
+                        )],
+                        response_modalities=["TEXT"]
+                    )
+                )
+                retry_count = attempt
+                break
+            except Exception as e:
+                retry_count = attempt
+                if is_retryable_error(e) and attempt < max_retries:
+                    delay = self.DEFAULT_RETRY_BASE_DELAY ** (attempt + 1)
+                    logger.warning(f"Sensitive search retry {attempt + 1}/{max_retries} for {clause_id}: {str(e)[:100]}")
+                    time.sleep(delay)
+                else:
+                    logger.error(f"Sensitive search failed for {clause_id} after {attempt + 1} attempts: {e}")
+                    return (clause_id, [], f"{clause_id}: {str(e)[:50]}")
+        
+        search_duration = time.time() - search_start
+        
+        if sensitive_response:
+            clause_chunks = self._extract_grounding_chunks(sensitive_response, self.top_k_sensitive)
+            logger.debug(f"Sensitive search for {clause_id}: {len(clause_chunks)} chunks (retries: {retry_count}, time: {search_duration:.1f}s)")
+            
+            if tracer:
+                tracer.record_api_call(
+                    service="gemini_file_search",
+                    method="sensitive_search",
+                    endpoint=f"models/{self.model_name}/generateContent",
+                    request_data={"clause_id": clause_id, "issues": issues, "top_k": self.top_k_sensitive},
+                    response_data={"chunks_count": len(clause_chunks), "retries": retry_count},
+                    duration=search_duration
+                )
+            return (clause_id, clause_chunks, None)
+        
+        return (clause_id, [], f"{clause_id}: No response")
+
     def search_chunks(self, contract_text: str, top_k: Optional[int] = None) -> Tuple[List[Dict], List[Dict]]:
         search_timer = RequestTimer()
         
@@ -514,84 +594,22 @@ class FileSearchService:
                 
                 if sensitive_clauses:
                     search_timer.start_step("sensitive_search")
-                    logger.info(f"STEP 3: Sensitive Search ({len(sensitive_clauses)} clauses)")
+                    max_workers = min(len(sensitive_clauses), 5)
+                    logger.info(f"STEP 3: Sensitive Search ({len(sensitive_clauses)} clauses, {max_workers} parallel workers)")
                     
-                    for sensitive_clause in sensitive_clauses:
-                        clause_id = sensitive_clause.get("term_id", "unknown")
-                        clause_text = sensitive_clause.get("term_text", "")
-                        issues = sensitive_clause.get("potential_issues", [])
+                    with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                        future_to_clause = {
+                            executor.submit(self._search_single_sensitive_clause, clause, tracer): clause
+                            for clause in sensitive_clauses
+                        }
                         
-                        logger.debug(f"Processing: {clause_id}")
-                        
-                        sensitive_search_prompt = """قم بالبحث الدقيق والعميق في معايير AAOIFI عن المقاطع التي تتعلق مباشرة بالمشاكل الشرعية التالية:
-
-مشاكل شرعية:
-{issues}
-
-نص البند من العقد:
-{clause_text}
-
-ابحث عن:
-1. المعايير الشرعية الدقيقة.
-2. النصوص التي تحتوي على كلمات حاسمة: "لا يجوز"، "محرم"، "يبطل".
-3. أمثلة على حالات مشابهة.
-
-ركز على الدقة الشرعية العالية.""".format(
-                            issues="\n".join(issues),
-                            clause_text=clause_text
-                        )
-                        
-                        max_retries_sensitive = self.DEFAULT_MAX_RETRIES
-                        retry_count_sensitive = 0
-                        sensitive_response = None
-                        sensitive_search_start = time.time()
-                        
-                        for attempt in range(max_retries_sensitive + 1):
-                            try:
-                                sensitive_response = self.client.models.generate_content(
-                                    model=self.model_name,
-                                    contents=sensitive_search_prompt,
-                                    config=types.GenerateContentConfig(
-                                        temperature=0.0,
-                                        tools=[types.Tool(
-                                            file_search=types.FileSearch(
-                                                file_search_store_names=[self.store_id],
-                                                top_k=self.top_k_sensitive
-                                            )
-                                        )],
-                                        response_modalities=["TEXT"]
-                                    )
-                                )
-                                retry_count_sensitive = attempt
-                                break
-                            except Exception as e:
-                                retry_count_sensitive = attempt
-                                if is_retryable_error(e) and attempt < max_retries_sensitive:
-                                    delay = self.DEFAULT_RETRY_BASE_DELAY ** (attempt + 1)
-                                    logger.warning(f"Sensitive search retry {attempt + 1}/{max_retries_sensitive} for {clause_id}: {str(e)[:100]}")
-                                    time.sleep(delay)
-                                else:
-                                    sensitive_search_failed = True
-                                    sensitive_search_errors.append(f"{clause_id}: {str(e)[:50]}")
-                                    logger.error(f"Sensitive search failed for {clause_id} after {attempt + 1} attempts: {e}")
-                                    break
-                        
-                        sensitive_search_duration = time.time() - sensitive_search_start
-                        
-                        if sensitive_response:
-                            clause_chunks = self._extract_grounding_chunks(sensitive_response, self.top_k_sensitive)
-                            sensitive_chunks.extend(clause_chunks)
-                            logger.debug(f"Sensitive search for {clause_id}: {len(clause_chunks)} chunks (retries: {retry_count_sensitive})")
-                            
-                            if tracer:
-                                tracer.record_api_call(
-                                    service="gemini_file_search",
-                                    method="sensitive_search",
-                                    endpoint=f"models/{self.model_name}/generateContent",
-                                    request_data={"clause_id": clause_id, "issues": issues, "top_k": self.top_k_sensitive},
-                                    response_data={"chunks_count": len(clause_chunks), "retries": retry_count_sensitive},
-                                    duration=sensitive_search_duration
-                                )
+                        for future in as_completed(future_to_clause):
+                            clause_id, clause_chunks, error = future.result()
+                            if error:
+                                sensitive_search_failed = True
+                                sensitive_search_errors.append(error)
+                            else:
+                                sensitive_chunks.extend(clause_chunks)
                     
                     if sensitive_search_failed:
                         pipeline_partial = True

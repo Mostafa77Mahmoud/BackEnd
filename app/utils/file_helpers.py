@@ -6,10 +6,12 @@ Matches OldStrcturePerfectProject/utils.py exactly.
 import os
 import uuid
 import re
-import traceback
 import tempfile
 import requests
 from unidecode import unidecode
+from app.utils.logging_utils import get_logger
+
+logger = get_logger(__name__)
 
 
 def ensure_dir(dir_path: str):
@@ -17,8 +19,7 @@ def ensure_dir(dir_path: str):
     try:
         os.makedirs(dir_path, exist_ok=True)
     except OSError as e:
-        print(f"ERROR: Could not create directory '{dir_path}': {e}")
-        traceback.print_exc()
+        logger.error(f"Could not create directory '{dir_path}': {e}")
         raise
 
 
@@ -54,7 +55,7 @@ def download_file_from_url(url, original_filename_for_suffix, temp_processing_fo
     """
     temp_file_path = None
     try:
-        print(f"Attempting to download from URL: {url}")
+        logger.debug(f"Downloading from URL: {url}")
         response = requests.get(url, stream=True, timeout=120)
         response.raise_for_status()
         
@@ -66,13 +67,11 @@ def download_file_from_url(url, original_filename_for_suffix, temp_processing_fo
             for chunk in response.iter_content(chunk_size=8192):
                 tmp_file.write(chunk)
             temp_file_path = tmp_file.name
-        print(f"File successfully downloaded to temporary path: {temp_file_path}")
+        logger.debug(f"File downloaded to: {temp_file_path}")
         return temp_file_path
     except requests.exceptions.RequestException as e:
-        print(f"ERROR downloading {url}: {e}")
-        traceback.print_exc()
+        logger.error(f"Download failed for {url}: {e}")
         return None
     except Exception as e:
-        print(f"ERROR during download of {url}: {e}")
-        traceback.print_exc()
+        logger.error(f"Download error for {url}: {e}")
         return None
