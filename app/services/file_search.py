@@ -178,8 +178,22 @@ class FileSearchService:
         self.sensitive_search_max_workers = current_app.config.get('SENSITIVE_SEARCH_MAX_WORKERS', 2)
         self.sensitive_search_delay = current_app.config.get('SENSITIVE_SEARCH_DELAY', 1.0)
         
+        # Thinking mode configuration for deeper analysis
+        self.enable_thinking = current_app.config.get('ENABLE_THINKING_MODE', True)
+        self.thinking_budget = current_app.config.get('THINKING_BUDGET', 4096)
+        
         logger.debug(f"Model: {self.model_name}, Store ID: {self.store_id}, Temperature: {self.temperature}")
         logger.debug(f"Sensitive search: enabled={self.enable_sensitive_search}, workers={self.sensitive_search_max_workers}, delay={self.sensitive_search_delay}s")
+        logger.debug(f"Thinking mode: enabled={self.enable_thinking}, budget={self.thinking_budget}")
+    
+    def _get_thinking_config(self):
+        """Get thinking config for file search operations."""
+        if not self.enable_thinking:
+            return None
+        return types.ThinkingConfig(
+            thinking_budget=self.thinking_budget,
+            include_thoughts=False
+        )
 
     @property
     def extract_prompt_template(self):
@@ -330,7 +344,8 @@ class FileSearchService:
 
 أخرج JSON array فقط:"""
             
-            logger.debug("Calling Gemini API for extraction with temperature=0 for deterministic results...")
+            thinking_config = self._get_thinking_config()
+            logger.debug(f"Calling Gemini API for extraction with temperature=0, thinking={'enabled' if thinking_config else 'disabled'}")
             tracer = get_request_tracer()
             api_start_time = time.time()
             
@@ -344,6 +359,7 @@ class FileSearchService:
                         contents=extraction_prompt,
                         config=types.GenerateContentConfig(
                             temperature=0.0,
+                            thinking_config=thinking_config,
                             response_modalities=["TEXT"]
                         )
                     )
@@ -566,7 +582,8 @@ class FileSearchService:
             
             full_prompt = self.search_prompt_template.format(extracted_clauses=extracted_clauses_text)
 
-            logger.debug("Querying Gemini File Search...")
+            thinking_config = self._get_thinking_config()
+            logger.debug(f"Querying Gemini File Search with thinking={'enabled' if thinking_config else 'disabled'}...")
             tracer = get_request_tracer()
             
             max_retries = self.DEFAULT_MAX_RETRIES
@@ -581,6 +598,7 @@ class FileSearchService:
                         contents=full_prompt,
                         config=types.GenerateContentConfig(
                             temperature=0.0,
+                            thinking_config=thinking_config,
                             tools=[types.Tool(
                                 file_search=types.FileSearch(
                                     file_search_store_names=[self.store_id],

@@ -73,6 +73,16 @@ class DefaultConfig:
     # Delay between sensitive search requests in seconds (rate limiting)
     SENSITIVE_SEARCH_DELAY: float = float(os.environ.get("SENSITIVE_SEARCH_DELAY", "1.0"))
     
+    # Thinking Mode Configuration (Gemini 2.5+)
+    # Enable thinking mode for deeper analysis and reasoning
+    ENABLE_THINKING_MODE: bool = os.environ.get("ENABLE_THINKING_MODE", "True").lower() == "true"
+    # Thinking budget: number of tokens for model's internal reasoning
+    # Higher values = deeper analysis but more latency/cost
+    # Recommended: 2048-4096 for complex Sharia analysis
+    THINKING_BUDGET: int = int(os.environ.get("THINKING_BUDGET", "4096"))
+    # Include thinking summaries in response (for debugging)
+    INCLUDE_THINKING_SUMMARY: bool = os.environ.get("INCLUDE_THINKING_SUMMARY", "False").lower() == "true"
+    
     # === PROMPTS - Loaded from prompts/ directory ===
     
     # Extraction Prompt

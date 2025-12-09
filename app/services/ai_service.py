@@ -65,8 +65,26 @@ def get_client():
     
     return client
 
+def get_thinking_config():
+    """Get thinking mode configuration for Gemini 2.5+ models."""
+    enable_thinking = current_app.config.get('ENABLE_THINKING_MODE', True)
+    
+    if not enable_thinking:
+        logger.info("Thinking mode DISABLED")
+        return None
+    
+    thinking_budget = current_app.config.get('THINKING_BUDGET', 4096)
+    include_summary = current_app.config.get('INCLUDE_THINKING_SUMMARY', False)
+    
+    logger.info(f"Thinking mode ENABLED: budget={thinking_budget} tokens, include_summary={include_summary}")
+    
+    return types.ThinkingConfig(
+        thinking_budget=thinking_budget,
+        include_thoughts=include_summary
+    )
+
 def get_chat_session(session_id_key: str, system_instruction: str | None = None, force_new: bool = False):
-    """Get or create a chat session for AI interactions."""
+    """Get or create a chat session for AI interactions with thinking mode enabled."""
     global chat_sessions, _clients
     session_id_key = session_id_key or "default_chat_session_key"
 
@@ -82,8 +100,11 @@ def get_chat_session(session_id_key: str, system_instruction: str | None = None,
             client = get_client()
             _clients[session_id_key] = client
             
+            thinking_config = get_thinking_config()
+            
             config = types.GenerateContentConfig(
                 temperature=temperature,
+                thinking_config=thinking_config,
                 safety_settings=[
                     types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
                     types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
@@ -92,6 +113,8 @@ def get_chat_session(session_id_key: str, system_instruction: str | None = None,
                 ],
                 system_instruction=system_instruction
             )
+            
+            logger.info(f"Chat session config: model={model_name}, temperature={temperature}, thinking={'enabled' if thinking_config else 'disabled'}")
             
             chat = client.chats.create(
                 model=model_name,

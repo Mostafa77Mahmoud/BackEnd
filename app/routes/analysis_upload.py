@@ -343,10 +343,16 @@ def analyze_file():
         extracted_terms = []
         
         try:
-            logger.info("Starting AAOIFI context retrieval")
+            logger.info("=" * 50)
+            logger.info("STEP: AAOIFI FILE SEARCH - CHUNKS RETRIEVAL")
+            logger.info("=" * 50)
+            logger.info(f"Contract text length for search: {len(analysis_input_text)} chars")
+            
             from app.services.file_search import FileSearchService
             file_search_service = FileSearchService()
             aaoifi_chunks, extracted_terms = file_search_service.search_chunks(analysis_input_text, top_k=10)
+            
+            logger.info(f"CHUNK VERIFICATION: Received {len(aaoifi_chunks)} chunks, {len(extracted_terms)} extracted terms")
             
             tracer.add_sub_step("extracted_terms", {
                 "count": len(extracted_terms),
@@ -354,12 +360,18 @@ def analyze_file():
             })
             
             if aaoifi_chunks:
-                logger.info(f"Retrieved {len(aaoifi_chunks)} chunks")
+                logger.info(f"Retrieved {len(aaoifi_chunks)} chunks - PROCESSING FOR ANALYSIS")
                 aaoifi_chunks.sort(key=lambda x: x.get("score", 0), reverse=True)
                 chunk_texts = []
+                valid_chunks_count = 0
+                empty_chunks_count = 0
+                
                 for idx, chunk in enumerate(aaoifi_chunks, 1):
                     chunk_text = chunk.get("chunk_text", "")
+                    chunk_uid = chunk.get("uid", f"chunk_{idx}")
+                    
                     if chunk_text:
+                        valid_chunks_count += 1
                         is_structured = chunk.get("is_structured", False)
                         if is_structured:
                             standard_name = chunk.get("title") or "معيار AAOIFI"
@@ -386,27 +398,53 @@ def analyze_file():
                             
                             header = "".join(header_parts)
                             chunk_texts.append(f"{header}\n{chunk_text}")
+                            logger.debug(f"  Chunk {chunk_uid}: STRUCTURED - {len(chunk_text)} chars, standard={standard_no}")
                         else:
                             title = chunk.get("title") or f"معيار AAOIFI {idx}"
                             chunk_texts.append(f"[{title}]\n{chunk_text}")
+                            logger.debug(f"  Chunk {chunk_uid}: UNSTRUCTURED - {len(chunk_text)} chars")
+                    else:
+                        empty_chunks_count += 1
+                        logger.warning(f"  Chunk {chunk_uid}: EMPTY - skipped")
+                
                 aaoifi_context = "\n\n".join(chunk_texts) if chunk_texts else ""
                 structured_count = sum(1 for c in aaoifi_chunks if c.get('is_structured', False))
-                logger.info(f"Context size: {len(aaoifi_context)} chars, structured: {structured_count}/{len(aaoifi_chunks)}")
-                file_search_status = "success"
+                
+                logger.info("=" * 50)
+                logger.info("CHUNK BINDING VERIFICATION REPORT")
+                logger.info("=" * 50)
+                logger.info(f"  Total chunks received: {len(aaoifi_chunks)}")
+                logger.info(f"  Valid chunks with text: {valid_chunks_count}")
+                logger.info(f"  Empty chunks (skipped): {empty_chunks_count}")
+                logger.info(f"  Structured chunks: {structured_count}")
+                logger.info(f"  Context total size: {len(aaoifi_context)} chars")
+                logger.info(f"  Contract text size: {len(analysis_input_text)} chars")
+                logger.info("=" * 50)
+                
+                if valid_chunks_count == 0:
+                    logger.error("CRITICAL: All chunks were empty! No AAOIFI context for analysis")
+                    file_search_status = "all_chunks_empty"
+                elif valid_chunks_count < len(aaoifi_chunks) * 0.5:
+                    logger.warning(f"WARNING: More than 50% of chunks were empty ({empty_chunks_count}/{len(aaoifi_chunks)})")
+                    file_search_status = "partial_success"
+                else:
+                    file_search_status = "success"
                 
                 tracer.add_sub_step("aaoifi_chunks", {
                     "count": len(aaoifi_chunks),
+                    "valid_count": valid_chunks_count,
+                    "empty_count": empty_chunks_count,
+                    "structured_count": structured_count,
+                    "context_length": len(aaoifi_context),
                     "chunks": aaoifi_chunks
                 })
             else:
-                logger.warning("No chunks retrieved")
+                logger.warning("CHUNK VERIFICATION: No chunks retrieved from File Search")
                 file_search_status = "no_results"
         except Exception as e:
-            logger.warning(f"File search failed: {e}")
+            logger.error(f"File search failed: {e}")
             file_search_status = f"error: {str(e)[:50]}"
             tracer.record_error("file_search_error", str(e))
-            # IMPORTANT: Do NOT reset aaoifi_context here - preserve any partial results
-            # that may have been retrieved before the failure
             if not aaoifi_context:
                 logger.warning("No AAOIFI context available due to file search failure")
         
@@ -441,10 +479,21 @@ def analyze_file():
             "input_text_length": len(analysis_input_text) if analysis_input_text else 0,
             "prompt_length": len(formatted_sys_prompt),
             "aaoifi_context_length": len(aaoifi_context),
-            "detected_language": detected_lang
+            "detected_language": detected_lang,
+            "chunks_bound": len(aaoifi_chunks) if aaoifi_chunks else 0,
+            "thinking_mode": "enabled"
         })
         analysis_status = "in_progress"
-        logger.info(f"Sending to LLM for analysis (contract: {len(analysis_input_text)} chars, AAOIFI context: {len(aaoifi_context)} chars, system prompt: {len(formatted_sys_prompt)} chars)")
+        
+        logger.info("=" * 50)
+        logger.info("STEP: AI SHARIA ANALYSIS WITH THINKING MODE")
+        logger.info("=" * 50)
+        logger.info(f"  Contract text: {len(analysis_input_text)} chars")
+        logger.info(f"  AAOIFI context: {len(aaoifi_context)} chars")
+        logger.info(f"  System prompt: {len(formatted_sys_prompt)} chars")
+        logger.info(f"  Chunks bound: {len(aaoifi_chunks) if aaoifi_chunks else 0}")
+        logger.info(f"  Thinking mode: ENABLED (deep analysis)")
+        logger.info("=" * 50)
         
         external_response_text = send_text_to_remote_api(
             analysis_input_text, 
