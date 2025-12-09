@@ -405,6 +405,10 @@ def apply_confirmed_terms_to_text(source_text: str, confirmed_terms: dict, contr
     Applies all confirmed term modifications to the source text using flexible matching.
     Formats each confirmed snippet to ensure proper clause title formatting.
     
+    SAFETY: First identifies all match positions in the ORIGINAL source, then applies
+    replacements in reverse order (end to start) to preserve position accuracy.
+    Tracks claimed spans to prevent the same text region from being matched multiple times.
+    
     Args:
         source_text: The original contract text
         confirmed_terms: Dict of term_id -> term_data with original_text and confirmed_text
@@ -414,42 +418,166 @@ def apply_confirmed_terms_to_text(source_text: str, confirmed_terms: dict, contr
         tuple: (modified_text, successful_replacements_count, failed_replacements_count)
     """
     if not confirmed_terms or not source_text:
+        logger.warning(f"apply_confirmed_terms_to_text: Empty input - confirmed_terms: {bool(confirmed_terms)}, source_text: {bool(source_text)}")
         return source_text, 0, 0
     
-    modified_text = source_text
+    logger.info(f"apply_confirmed_terms_to_text: Processing {len(confirmed_terms)} confirmed terms")
+    logger.debug(f"Source text length: {len(source_text)} chars")
+    
+    # Phase 1: Find all match positions in the ORIGINAL source text
+    # Store as list of (start_pos, end_pos, replacement_text, term_id)
+    # Track claimed intervals to avoid matching the same region twice
+    replacements_to_apply = []
+    claimed_intervals = []  # List of (start, end) tuples for already matched regions
     successful = 0
     failed = 0
     
     for term_id, term_data in confirmed_terms.items():
         if not isinstance(term_data, dict):
+            logger.warning(f"Term {term_id}: Invalid term_data type")
             continue
         
         original_text = term_data.get("original_text", "")
         confirmed_text = term_data.get("confirmed_text", "")
         
+        logger.debug(f"Term {term_id}: original={len(original_text)} chars, confirmed={len(confirmed_text)} chars")
+        
         # Skip if no change needed
         if not original_text or not confirmed_text:
+            logger.warning(f"Term {term_id}: Skipping - empty text")
             continue
         if original_text.strip() == confirmed_text.strip():
+            logger.info(f"Term {term_id}: Skipping - texts are identical")
             continue
         
-        # Format the confirmed text snippet to ensure proper clause title formatting
-        # This only formats the replacement snippet, not the entire document
+        # Format the confirmed text
         formatted_confirmed_text = format_confirmed_text_with_proper_structure(confirmed_text, contract_language)
         
-        modified_text, was_replaced = flexible_text_replace(
-            modified_text, original_text, formatted_confirmed_text
-        )
+        # Try to find the match position in original source, excluding claimed intervals
+        match_result = _find_term_in_source_excluding(source_text, original_text, claimed_intervals)
         
-        if was_replaced:
-            successful += 1
-            logger.info(f"Successfully applied modification for term {term_id}")
+        if match_result:
+            start_pos, end_pos = match_result
+            # Check for overlap with existing claimed intervals
+            is_overlapping = any(
+                not (end_pos <= claimed_start or start_pos >= claimed_end)
+                for claimed_start, claimed_end in claimed_intervals
+            )
+            if is_overlapping:
+                logger.warning(f"Term {term_id}: Found match at {start_pos}-{end_pos} but overlaps with claimed region")
+                failed += 1
+            else:
+                claimed_intervals.append((start_pos, end_pos))
+                replacements_to_apply.append((start_pos, end_pos, formatted_confirmed_text, term_id))
+                successful += 1
+                logger.info(f"Term {term_id}: Found match at positions {start_pos}-{end_pos}")
         else:
             failed += 1
-            logger.warning(f"Failed to apply modification for term {term_id}: original text not found")
+            logger.warning(f"Term {term_id}: Original text not found in source")
     
-    logger.info(f"Applied confirmed terms: {successful} successful, {failed} failed")
+    # Phase 2: Apply replacements in reverse order (end to start) to preserve positions
+    if not replacements_to_apply:
+        logger.info(f"Applied confirmed terms: 0 successful, {failed} failed")
+        return source_text, 0, failed
+    
+    # Sort by start position descending (apply from end to start)
+    replacements_to_apply.sort(key=lambda x: x[0], reverse=True)
+    
+    modified_text = source_text
+    for start_pos, end_pos, replacement_text, term_id in replacements_to_apply:
+        modified_text = modified_text[:start_pos] + replacement_text + modified_text[end_pos:]
+        logger.debug(f"Applied replacement for term {term_id}")
+    
+    logger.info(f"Applied confirmed terms: {successful} successful, {failed} failed out of {len(confirmed_terms)} total")
     return modified_text, successful, failed
+
+
+def _find_term_in_source_excluding(source_text: str, search_text: str, excluded_intervals: list) -> tuple[int, int] | None:
+    """
+    Find the exact span of search_text in source_text, excluding already claimed intervals.
+    Tries multiple matching strategies.
+    
+    Args:
+        source_text: The full source text to search in
+        search_text: The text to find
+        excluded_intervals: List of (start, end) tuples representing already claimed regions
+    
+    Returns (start_pos, end_pos) or None.
+    """
+    if not search_text or not source_text:
+        return None
+    
+    def is_excluded(start: int, end: int) -> bool:
+        """Check if a span overlaps with any excluded interval."""
+        for exc_start, exc_end in excluded_intervals:
+            if not (end <= exc_start or start >= exc_end):
+                return True
+        return False
+    
+    def find_all_occurrences(text: str, pattern: str) -> list:
+        """Find all occurrences of pattern in text."""
+        occurrences = []
+        start = 0
+        while True:
+            idx = text.find(pattern, start)
+            if idx == -1:
+                break
+            occurrences.append((idx, idx + len(pattern)))
+            start = idx + 1
+        return occurrences
+    
+    # Strategy 1: Exact match - find first non-excluded occurrence
+    for start, end in find_all_occurrences(source_text, search_text):
+        if not is_excluded(start, end):
+            return (start, end)
+    
+    # Strategy 2: Strip and try exact match
+    stripped = search_text.strip()
+    if stripped != search_text:
+        for start, end in find_all_occurrences(source_text, stripped):
+            if not is_excluded(start, end):
+                return (start, end)
+    
+    # Strategy 3: Remove [[ID:...]] marker and try exact match
+    cleaned = re.sub(r'^\[\[ID:.*?\]\]\s*', '', search_text.strip())
+    if cleaned and cleaned != stripped:
+        for start, end in find_all_occurrences(source_text, cleaned):
+            if not is_excluded(start, end):
+                return (start, end)
+    
+    # Strategy 4: Use normalized matching with position mapping
+    normalized_search = normalize_text_for_matching(search_text)
+    if normalized_search and len(normalized_search) >= 10:
+        # Try to find matches using position mapping
+        search_start = 0
+        while search_start < len(source_text):
+            match_result = _find_match_with_position_mapping(source_text[search_start:], normalized_search)
+            if match_result:
+                abs_start = search_start + match_result[0]
+                abs_end = search_start + match_result[1]
+                if not is_excluded(abs_start, abs_end):
+                    return (abs_start, abs_end)
+                search_start = abs_end
+            else:
+                break
+    
+    # Strategy 5: Try with cleaned text for normalized matching
+    if cleaned and cleaned != search_text.strip():
+        normalized_cleaned = normalize_text_for_matching(cleaned)
+        if normalized_cleaned and len(normalized_cleaned) >= 10:
+            search_start = 0
+            while search_start < len(source_text):
+                match_result = _find_match_with_position_mapping(source_text[search_start:], normalized_cleaned)
+                if match_result:
+                    abs_start = search_start + match_result[0]
+                    abs_end = search_start + match_result[1]
+                    if not is_excluded(abs_start, abs_end):
+                        return (abs_start, abs_end)
+                    search_start = abs_end
+                else:
+                    break
+    
+    return None
 
 
 def generate_safe_public_id(base_name, prefix="", max_length=50):
@@ -513,22 +641,45 @@ class OptimizedTextMatcher:
         Returns (start_pos, end_pos, matched_text) or None.
         
         Uses multiple search strategies with early termination for performance.
+        Constrains matches to positions >= start_pos to maintain document order.
         """
         if not search_text or not search_text.strip() or start_pos >= self.source_len:
             return None
         
+        # Try exact match first
         result = self._exact_search(search_text, start_pos)
         if result:
+            logger.debug(f"TextMatcher: Found exact match at pos {result[0]}")
             return result
         
+        # Try without [[ID:...]] markers if present in search_text
+        cleaned_search = re.sub(r'^\[\[ID:.*?\]\]\s*', '', search_text.strip())
+        if cleaned_search != search_text.strip() and cleaned_search:
+            result = self._exact_search(cleaned_search, start_pos)
+            if result:
+                logger.debug(f"TextMatcher: Found match (no ID marker) at pos {result[0]}")
+                return result
+        
+        # Try normalized search
         result = self._normalized_search(search_text, start_pos)
         if result:
+            logger.debug(f"TextMatcher: Found normalized match at pos {result[0]}")
             return result
         
+        # Also try normalized search on cleaned text
+        if cleaned_search != search_text.strip() and cleaned_search:
+            result = self._normalized_search(cleaned_search, start_pos)
+            if result:
+                logger.debug(f"TextMatcher: Found normalized match (cleaned) at pos {result[0]}")
+                return result
+        
+        # Try prefix search as fallback
         result = self._prefix_search(search_text, start_pos)
         if result:
+            logger.debug(f"TextMatcher: Found prefix match at pos {result[0]}")
             return result
         
+        logger.debug(f"TextMatcher: No match found starting from pos {start_pos}")
         return None
     
     def _exact_search(self, search_text: str, start_pos: int) -> tuple[int, int, str] | None:
