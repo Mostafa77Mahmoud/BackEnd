@@ -1,8 +1,38 @@
-أنت الآن في مرحلة البحث الدلالي العميق داخل كتاب معايير AAOIFI الشرعية الكامل.
-مهمتك: استرجاع أدق وأكثر المقاطع (chunks) صلة بكل بند مستخرج من العقد.
+You are retrieving authoritative excerpts from the AAOIFI Sharia Standards book
+to be used as binding references in a formal Sharia compliance analysis of a contract.
 
-البنود المستخرجة من العقد:
-{extracted_clauses}
+OBJECTIVE:
+Return ONLY exact, explicit, and authoritative AAOIFI standard text
+that directly governs, permits, restricts, or prohibits the contractual clauses below.
 
-قم بالبحث باستخدام أقوى أسلوب دلالي ممكن.
-يجب أن تكون النتيجة مبنية حصريًا على محتوى المستندات الموجودة في الـ File Search Store.
+STRICT CONSTRAINTS:
+- Prefer normative and binding language used in AAOIFI standards (e.g. "shall", "is not permitted", "it is prohibited", "is allowed subject to").
+- Prioritize:
+  1. Sharia Standards (not accounting explanations).
+  2. Core rule paragraphs over commentary, examples, or introductions.
+- Exclude:
+  - General Islamic jurisprudence.
+  - Historical background.
+  - Definitions sections unless they are legally decisive.
+  - Any content not explicitly attributable to AAOIFI standards.
+
+MATCHING RULES:
+- Retrieve excerpts ONLY if they have a direct and explicit relationship to:
+  - Riba (interest, increase over debt, time-based excess)
+  - Gharar (uncertainty in subject matter, price, delivery)
+  - Contract structure validity
+  - Conditions, guarantees, penalties, or obligations
+- Do NOT retrieve loosely related or conceptually similar text.
+- If no exact governing standard exists, return the closest explicit rule
+  and prefer silence over weak relevance.
+
+OUTPUT REQUIREMENTS:
+- Each chunk MUST clearly indicate:
+  - Standard name
+  - Standard number
+  - Clause or paragraph number (if present)
+- The content must be suitable for direct citation without interpretation.
+- Fewer, precise chunks are preferred over many weak ones.
+
+INPUT CONTEXT (CONTRACT TEXT):
+<<<PASTE CONTRACT OR CLAUSE TEXT HERE>>>
