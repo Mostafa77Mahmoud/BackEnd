@@ -205,6 +205,11 @@ class FileSearchService:
         from config.default import DefaultConfig
         return DefaultConfig.FILE_SEARCH_PROMPT
 
+    @property
+    def sensitive_search_prompt_template(self):
+        from config.default import DefaultConfig
+        return DefaultConfig.SENSITIVE_SEARCH_PROMPT
+
     def _get_contract_hash(self, contract_text: str) -> str:
         normalized = ' '.join(contract_text.split()).strip()
         return hashlib.sha256(normalized.encode('utf-8')).hexdigest()[:32]
@@ -472,23 +477,28 @@ class FileSearchService:
         clause_text = sensitive_clause.get("term_text", "")
         issues = sensitive_clause.get("potential_issues", [])
         
-        sensitive_search_prompt = """قم بالبحث الدقيق والعميق في معايير AAOIFI عن المقاطع التي تتعلق مباشرة بالمشاكل الشرعية التالية:
+        try:
+            sensitive_search_prompt = self.sensitive_search_prompt_template.format(
+                issues="\n".join(issues) if issues else "لا توجد مشاكل محددة",
+                clause_text=clause_text
+            )
+        except KeyError as e:
+            logger.warning(f"Prompt template format error for {clause_id}: {e}, using fallback")
+            sensitive_search_prompt = """ابحث في معايير AAOIFI عن المقاطع المتعلقة بالمشاكل الشرعية التالية:
 
 مشاكل شرعية:
 {issues}
 
-نص البند من العقد:
+نص البند:
 {clause_text}
 
-ابحث عن:
-1. المعايير الشرعية الدقيقة.
-2. النصوص التي تحتوي على كلمات حاسمة: "لا يجوز"، "محرم"، "يبطل".
-3. أمثلة على حالات مشابهة.
+أخرج النتيجة بصيغة JSON array فقط بالهيكل التالي:
+[{{"standard_name_ar": "...", "standard_no": "...", "clause_no": "...", "excerpt_ar": "...", "relation_type": "governs|permits|restricts|prohibits", "confidence": 0.9}}]
 
-ركز على الدقة الشرعية العالية.""".format(
-            issues="\n".join(issues),
-            clause_text=clause_text
-        )
+بدون أي نص إضافي. JSON array فقط.""".format(
+                issues="\n".join(issues) if issues else "لا توجد مشاكل محددة",
+                clause_text=clause_text
+            )
         
         max_retries = self.DEFAULT_MAX_RETRIES
         retry_count = 0

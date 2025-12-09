@@ -147,3 +147,8 @@ class DefaultConfig:
         'FILE_SEARCH_PROMPT.txt',
         "Search AAOIFI standards"
     )
+    
+    SENSITIVE_SEARCH_PROMPT: str = _load_prompt_from_file(
+        'SENSITIVE_SEARCH_PROMPT.txt',
+        "Search AAOIFI standards for sensitive clauses"
+    )
