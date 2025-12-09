@@ -430,6 +430,20 @@ def create_docx_from_llm_markdown(
                     found_pos_absolute = search_start_pos + found_pos_relative
                     matched_text_in_doc = match.group(0) 
 
+                    if found_pos_absolute < current_markdown_pos:
+                        logger.warning(f"Term '{term_data.get('term_id')}' found at pos {found_pos_absolute} before current pos {current_markdown_pos} - searching again from current position")
+                        retry_match = text_matcher.find_term(search_text, current_markdown_pos)
+                        if not retry_match and term_title.strip():
+                            retry_match = text_matcher.find_term(term_title.strip(), current_markdown_pos)
+                        if not retry_match and term_text_original.strip():
+                            retry_match = text_matcher.find_term(term_text_original.strip(), current_markdown_pos)
+                        if retry_match:
+                            found_pos_absolute, _, matched_text_in_doc = retry_match
+                            logger.info(f"Retry found term '{term_data.get('term_id')}' at pos {found_pos_absolute}")
+                        else:
+                            logger.warning(f"Term '{term_data.get('term_id')}' not found after current pos - likely already rendered as unmarked text")
+                            continue
+
                     inter_term_text = processed_markdown_text[current_markdown_pos:found_pos_absolute]
                     if inter_term_text.strip():
                         for line_in_inter_term in inter_term_text.splitlines(): 
@@ -437,13 +451,22 @@ def create_docx_from_llm_markdown(
                                  continue
                              l_style, l_text, _, l_is_list = _determine_style_and_text(line_in_inter_term, contract_language)
                              _add_paragraph_with_markdown_formatting(doc, l_style, l_text, contract_language, chosen_font, is_list_item=l_is_list, list_indent=list_indent_val if l_is_list else None, first_line_indent_list=first_line_indent_val_list if l_is_list and contract_language == 'ar' else None)
-                    
                     logger.info(f"Found term '{term_data.get('term_id')}' at pos {found_pos_absolute}")
+                    
                     initial_is_valid = term_data.get("is_valid_sharia", True)
                     is_confirmed = term_data.get("is_confirmed_by_user", False)
                     confirmed_text_content = term_data.get("confirmed_modified_text") 
                     
-                    term_lines_to_render_original = matched_text_in_doc.splitlines() 
+                    matched_text_with_title = matched_text_in_doc
+                    title_normalized = re.sub(r'[:؟?!\.،,\s]+$', '', term_title.strip()) if term_title else ""
+                    first_line_of_match = matched_text_in_doc.split('\n')[0] if matched_text_in_doc else ""
+                    first_line_normalized = re.sub(r'[:؟?!\.،,\s]+$', '', first_line_of_match.strip())
+                    title_missing = title_normalized and title_normalized != first_line_normalized and not first_line_normalized.startswith(title_normalized)
+                    if title_missing:
+                        matched_text_with_title = term_title.strip() + "\n" + matched_text_in_doc
+                        logger.info(f"Prepending missing title '{term_title.strip()}' to matched text for term {term_data.get('term_id')}")
+                    
+                    term_lines_to_render_original = matched_text_with_title.splitlines() 
 
                     if is_confirmed and confirmed_text_content and \
                        not initial_is_valid and confirmed_text_content.strip() != term_text_original.strip():
@@ -469,10 +492,16 @@ def create_docx_from_llm_markdown(
                             l_style, l_text, _, l_is_list = _determine_style_and_text(line_in_confirmed_text, contract_language)
                             _add_paragraph_with_markdown_formatting(doc, l_style, l_text, contract_language, chosen_font, text_color=RGBColor(0,128,0), is_list_item=l_is_list, list_indent=list_indent_val if l_is_list else None, first_line_indent_list=first_line_indent_val_list if l_is_list and contract_language == 'ar' else None)
                     else:
-                        text_to_render_for_term = matched_text_in_doc 
+                        text_to_render_for_term = matched_text_with_title 
                         final_text_color_for_term = None
                         if is_confirmed and confirmed_text_content:
-                            text_to_render_for_term = confirmed_text_content 
+                            first_line_of_confirmed = confirmed_text_content.split('\n')[0] if confirmed_text_content else ""
+                            first_line_confirmed_normalized = re.sub(r'[:؟?!\.،,\s]+$', '', first_line_of_confirmed.strip())
+                            title_missing_in_confirmed = title_normalized and title_normalized != first_line_confirmed_normalized and not first_line_confirmed_normalized.startswith(title_normalized)
+                            if title_missing_in_confirmed:
+                                text_to_render_for_term = term_title.strip() + "\n" + confirmed_text_content
+                            else:
+                                text_to_render_for_term = confirmed_text_content 
                             final_text_color_for_term = RGBColor(0,128,0) 
                             logger.info(f"Applying MARKING: Green (confirmed) for term {term_data.get('term_id')}")
                         elif not initial_is_valid:
@@ -489,15 +518,15 @@ def create_docx_from_llm_markdown(
                 else:
                     logger.warning(f"Term '{term_data.get('term_id')}' text not found sequentially from pos {search_start_pos}")
                     global_match = text_matcher.find_term(search_text, 0)
-                    if not global_match and term_title.strip():
-                        global_match = text_matcher.find_term(term_title.strip(), 0)
-                    if not global_match and term_text_original.strip():
+                    if not global_match and full_clause_text.strip() and term_text_original.strip():
                         global_match = text_matcher.find_term(term_text_original.strip(), 0)
                     if global_match:
-                        global_pos, global_end, _ = global_match
-                        logger.info(f"Term '{term_data.get('term_id')}' found at global pos {global_pos} (out of sequence)")
+                        global_pos, global_end, matched_global_text = global_match
                         if global_pos > current_markdown_pos:
+                            logger.info(f"Term '{term_data.get('term_id')}' found at global pos {global_pos} (out of sequence, advancing position)")
                             current_markdown_pos = global_pos
+                        else:
+                            logger.info(f"Term '{term_data.get('term_id')}' found at global pos {global_pos} (out of sequence, position not advanced to avoid regression)")
             
             total_elapsed = time.time() - total_start_time
             logger.info(f"DOC_PROCESSING: Term marking completed in {total_elapsed:.2f}s for {len(terms_for_marking)} terms")

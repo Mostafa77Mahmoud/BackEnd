@@ -387,8 +387,19 @@ def format_confirmed_text_with_proper_structure(confirmed_text: str, contract_la
                 title = match.group(1)
                 remaining = line_stripped[len(title):].strip()
                 
-                # If there's content after the title (not just punctuation), separate them
-                if remaining and not re.match(r'^[:؟?!\.،,]*$', remaining):
+                # Check for punctuation immediately after title (like colon)
+                punctuation_match = re.match(r'^([:؟?!\.،,]+)\s*(.*)$', remaining)
+                if punctuation_match:
+                    punctuation = punctuation_match.group(1)
+                    content_after_punct = punctuation_match.group(2).strip()
+                    # Keep title with its punctuation, separate only content
+                    if content_after_punct:
+                        formatted_lines.append(title + punctuation)
+                        formatted_lines.append(content_after_punct)
+                        matched = True
+                        break
+                elif remaining:
+                    # Content without punctuation separator - separate them
                     formatted_lines.append(title)
                     formatted_lines.append(remaining)
                     matched = True
@@ -651,8 +662,16 @@ class OptimizedTextMatcher:
         if not search_text or not search_text.strip() or start_pos >= self.source_len:
             return None
         
+        def validate_result(result):
+            """Ensure result position is >= start_pos to prevent cursor regression."""
+            if result and result[0] >= start_pos:
+                return result
+            elif result:
+                logger.warning(f"TextMatcher: Rejecting match at pos {result[0]} (before start_pos {start_pos})")
+            return None
+        
         # Try exact match first
-        result = self._exact_search(search_text, start_pos)
+        result = validate_result(self._exact_search(search_text, start_pos))
         if result:
             logger.debug(f"TextMatcher: Found exact match at pos {result[0]}")
             return result
@@ -660,26 +679,26 @@ class OptimizedTextMatcher:
         # Try without [[ID:...]] markers if present in search_text
         cleaned_search = re.sub(r'^\[\[ID:.*?\]\]\s*', '', search_text.strip())
         if cleaned_search != search_text.strip() and cleaned_search:
-            result = self._exact_search(cleaned_search, start_pos)
+            result = validate_result(self._exact_search(cleaned_search, start_pos))
             if result:
                 logger.debug(f"TextMatcher: Found match (no ID marker) at pos {result[0]}")
                 return result
         
         # Try normalized search
-        result = self._normalized_search(search_text, start_pos)
+        result = validate_result(self._normalized_search(search_text, start_pos))
         if result:
             logger.debug(f"TextMatcher: Found normalized match at pos {result[0]}")
             return result
         
         # Also try normalized search on cleaned text
         if cleaned_search != search_text.strip() and cleaned_search:
-            result = self._normalized_search(cleaned_search, start_pos)
+            result = validate_result(self._normalized_search(cleaned_search, start_pos))
             if result:
                 logger.debug(f"TextMatcher: Found normalized match (cleaned) at pos {result[0]}")
                 return result
         
         # Try prefix search as fallback
-        result = self._prefix_search(search_text, start_pos)
+        result = validate_result(self._prefix_search(search_text, start_pos))
         if result:
             logger.debug(f"TextMatcher: Found prefix match at pos {result[0]}")
             return result
