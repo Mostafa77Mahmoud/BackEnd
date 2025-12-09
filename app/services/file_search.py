@@ -1,6 +1,7 @@
 import time
 import json
 import re
+import hashlib
 from google import genai
 from google.genai import types
 from pathlib import Path
@@ -109,6 +110,9 @@ class FileSearchService:
     
     DEFAULT_MAX_RETRIES = 3
     DEFAULT_RETRY_BASE_DELAY = 2
+    
+    _terms_cache: Dict[str, List[Dict]] = {}
+    _cache_max_size: int = 100
 
     def __init__(self):
         self.timer = RequestTimer()
@@ -140,8 +144,11 @@ class FileSearchService:
         self.model_name = current_app.config.get('MODEL_NAME', 'gemini-2.5-flash')
         self.store_id: Optional[str] = current_app.config.get('FILE_SEARCH_STORE_ID')
         self.context_dir = "context"
+        self.temperature = current_app.config.get('TEMPERATURE', 0)
+        self.top_k_general = current_app.config.get('TOP_K_CHUNKS', 15)
+        self.top_k_sensitive = current_app.config.get('TOP_K_SENSITIVE', 5)
         
-        logger.debug(f"Model: {self.model_name}, Store ID: {self.store_id}")
+        logger.debug(f"Model: {self.model_name}, Store ID: {self.store_id}, Temperature: {self.temperature}")
 
     @property
     def extract_prompt_template(self):
@@ -152,6 +159,24 @@ class FileSearchService:
     def search_prompt_template(self):
         from config.default import DefaultConfig
         return DefaultConfig.FILE_SEARCH_PROMPT
+
+    def _get_contract_hash(self, contract_text: str) -> str:
+        normalized = ' '.join(contract_text.split()).strip()
+        return hashlib.sha256(normalized.encode('utf-8')).hexdigest()[:32]
+
+    def _get_cached_terms(self, contract_hash: str) -> Optional[List[Dict]]:
+        if contract_hash in self._terms_cache:
+            logger.debug(f"Cache HIT for contract hash: {contract_hash[:8]}...")
+            return self._terms_cache[contract_hash]
+        return None
+
+    def _set_cached_terms(self, contract_hash: str, terms: List[Dict]) -> None:
+        if len(self._terms_cache) >= self._cache_max_size:
+            oldest_key = next(iter(self._terms_cache))
+            del self._terms_cache[oldest_key]
+            logger.debug(f"Cache evicted oldest entry, size now: {len(self._terms_cache)}")
+        self._terms_cache[contract_hash] = terms
+        logger.debug(f"Cache SET for contract hash: {contract_hash[:8]}...")
 
     def initialize_store(self) -> str:
         logger.info("=" * 50)
@@ -237,10 +262,19 @@ class FileSearchService:
 
         logger.info(f"Uploaded {uploaded_count}/{len(files)} files")
 
-    def extract_key_terms(self, contract_text: str, max_retries: int = None) -> List[Dict]:
+    def extract_key_terms(self, contract_text: str, max_retries: int = None, use_cache: bool = True) -> List[Dict]:
         self.timer.start_step("term_extraction")
         logger.info("STEP 1: Term Extraction")
         logger.debug(f"Contract length: {len(contract_text)} chars")
+        
+        contract_hash = self._get_contract_hash(contract_text)
+        
+        if use_cache:
+            cached_terms = self._get_cached_terms(contract_hash)
+            if cached_terms is not None:
+                logger.info(f"Using cached terms ({len(cached_terms)} terms) for contract hash: {contract_hash[:8]}...")
+                self.timer.end_step()
+                return cached_terms
         
         if max_retries is None:
             max_retries = self.DEFAULT_MAX_RETRIES
@@ -265,7 +299,7 @@ class FileSearchService:
 
 أخرج JSON array فقط:"""
             
-            logger.debug("Calling Gemini API for extraction...")
+            logger.debug("Calling Gemini API for extraction with temperature=0 for deterministic results...")
             tracer = get_request_tracer()
             api_start_time = time.time()
             
@@ -278,6 +312,7 @@ class FileSearchService:
                         model=self.model_name,
                         contents=extraction_prompt,
                         config=types.GenerateContentConfig(
+                            temperature=0.0,
                             response_modalities=["TEXT"]
                         )
                     )
@@ -350,6 +385,10 @@ class FileSearchService:
                     logger.debug(f"Skipping invalid term {idx}: {term_msg}")
             
             logger.info(f"Extracted {len(valid_terms)} valid terms (retries: {retry_count})")
+            
+            if valid_terms:
+                self._set_cached_terms(contract_hash, valid_terms)
+            
             self.timer.end_step()
             return valid_terms
                 
@@ -431,6 +470,7 @@ class FileSearchService:
                         model=self.model_name,
                         contents=full_prompt,
                         config=types.GenerateContentConfig(
+                            temperature=0.0,
                             tools=[types.Tool(
                                 file_search=types.FileSearch(
                                     file_search_store_names=[self.store_id],
@@ -512,10 +552,11 @@ class FileSearchService:
                                     model=self.model_name,
                                     contents=sensitive_search_prompt,
                                     config=types.GenerateContentConfig(
+                                        temperature=0.0,
                                         tools=[types.Tool(
                                             file_search=types.FileSearch(
                                                 file_search_store_names=[self.store_id],
-                                                top_k=2
+                                                top_k=self.top_k_sensitive
                                             )
                                         )],
                                         response_modalities=["TEXT"]
@@ -538,7 +579,7 @@ class FileSearchService:
                         sensitive_search_duration = time.time() - sensitive_search_start
                         
                         if sensitive_response:
-                            clause_chunks = self._extract_grounding_chunks(sensitive_response, 2)
+                            clause_chunks = self._extract_grounding_chunks(sensitive_response, self.top_k_sensitive)
                             sensitive_chunks.extend(clause_chunks)
                             logger.debug(f"Sensitive search for {clause_id}: {len(clause_chunks)} chunks (retries: {retry_count_sensitive})")
                             
@@ -547,7 +588,7 @@ class FileSearchService:
                                     service="gemini_file_search",
                                     method="sensitive_search",
                                     endpoint=f"models/{self.model_name}/generateContent",
-                                    request_data={"clause_id": clause_id, "issues": issues, "top_k": 2},
+                                    request_data={"clause_id": clause_id, "issues": issues, "top_k": self.top_k_sensitive},
                                     response_data={"chunks_count": len(clause_chunks), "retries": retry_count_sensitive},
                                     duration=sensitive_search_duration
                                 )

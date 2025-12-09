@@ -62,7 +62,8 @@ class DefaultConfig:
     
     GEMINI_FILE_SEARCH_API_KEY: str | None = os.environ.get("GEMINI_FILE_SEARCH_API_KEY")
     FILE_SEARCH_STORE_ID: str | None = os.environ.get("FILE_SEARCH_STORE_ID")
-    TOP_K_CHUNKS: int = int(os.environ.get("TOP_K_CHUNKS", "10"))
+    TOP_K_CHUNKS: int = int(os.environ.get("TOP_K_CHUNKS", "15"))
+    TOP_K_SENSITIVE: int = int(os.environ.get("TOP_K_SENSITIVE", "5"))
     
     # === PROMPTS - Loaded from prompts/ directory ===
     
